@@ -63,7 +63,7 @@ function goAdmin() {
   redirecting = true;
   sessionStorage.removeItem(GOOGLE_REDIRECT_KEY);
   // Full navigation with cache-bust so post-login admin boot is never a stale blank page.
-  window.location.replace(`admin.html?v=88&t=${Date.now()}`);
+  window.location.replace(`admin.html?v=89&t=${Date.now()}`);
 }
 
 function getOrInitAuth(app) {
