@@ -144,7 +144,7 @@ async function startAdminForUser(user) {
       await auth.authStateReady();
       if (auth.currentUser) return;
     }
-    window.location.replace("admin-login.html?v=77");
+    window.location.replace("admin-login.html?v=88");
     return;
   }
 
@@ -152,9 +152,10 @@ async function startAdminForUser(user) {
   booted = true;
 
   try {
-    hideBootScreen();
+    // Show shell before removing boot to avoid a blank white frame after login.
     adminShell?.classList.remove("hidden");
     if (viewRoot) viewRoot.innerHTML = loadingHtml("載入後台…", 72, "讀取帳戶資料");
+    hideBootScreen();
 
     const profileRes = await withTimeout(
       ensureUserProfile(user),
@@ -193,11 +194,11 @@ async function startAdminForUser(user) {
     await boot();
   } catch (err) {
     console.error("Admin boot failed:", err);
-    hideBootScreen();
     adminShell?.classList.remove("hidden");
     if (viewRoot) {
       viewRoot.innerHTML = warnHtml(`載入失敗：${escapeHtml(String(err?.message || err))}`);
     }
+    hideBootScreen();
   }
 }
 
@@ -219,7 +220,7 @@ if (firebaseError) {
 
 logoutBtn?.addEventListener("click", async () => {
   await adminLogout();
-  window.location.replace("admin-login.html?v=77");
+  window.location.replace("admin-login.html?v=88");
 });
 
 adminMenuToggle?.addEventListener("click", () => {

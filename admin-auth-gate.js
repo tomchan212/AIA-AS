@@ -1,6 +1,4 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { initFirebase, getAuthInstance } from "./firebase-api.js";
 
 const bootEl = document.getElementById("admin-boot");
 window.__adminBooted = false;
@@ -11,7 +9,7 @@ function fail(msg) {
   bootEl.innerHTML =
     '<div class="alert-warn" style="max-width:360px;margin:0 auto;text-align:left">' +
     msg +
-    '<br><br><button type="button" id="admin-boot-retry" style="margin-right:0.75rem;font-weight:700">再試一次</button><a href="admin-login.html?v=77" style="color:var(--color-primary);font-weight:700">返回登入頁</a></div>';
+    '<br><br><button type="button" id="admin-boot-retry" style="margin-right:0.75rem;font-weight:700">再試一次</button><a href="admin-login.html?v=88" style="color:var(--color-primary);font-weight:700">返回登入頁</a></div>';
   bootEl.querySelector("#admin-boot-retry")?.addEventListener("click", () => {
     window.location.reload();
   });
@@ -41,21 +39,18 @@ function withTimeout(promise, ms, label) {
 }
 
 function loginUrl_() {
-  return new URL("admin-login.html?v=77", window.location.href).href;
+  return new URL("admin-login.html?v=88", window.location.href).href;
 }
 
 async function start() {
   try {
-    if (!firebaseConfig?.apiKey || !firebaseConfig?.projectId) {
-      throw new Error("Firebase 設定不完整");
-    }
-
     setLoading("連接 Firebase…", 25, "讀取專案設定");
-    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    await withTimeout(initFirebase(), 10000, "Firebase 初始化逾時，請重新整理");
+
+    const auth = getAuthInstance();
+    if (!auth) throw new Error("Auth 未初始化");
 
     setLoading("檢查登入狀態…", 45, "確認目前帳戶");
-
     await withTimeout(auth.authStateReady(), 7000, "登入檢查逾時，請重新登入");
     const user = auth.currentUser;
 
@@ -66,8 +61,9 @@ async function start() {
     }
 
     setLoading("載入後台…", 70, "準備 Dashboard");
-    window.__adminBooted = true;
-    await import(new URL("./admin-app.js", import.meta.url).href);
+    const appUrl = new URL("./admin-app.js", import.meta.url);
+    appUrl.searchParams.set("v", "88");
+    await import(appUrl.href);
   } catch (err) {
     fail("載入失敗：" + (err?.message || "請重新整理"));
   }

@@ -62,7 +62,8 @@ function goAdmin() {
   if (redirecting) return;
   redirecting = true;
   sessionStorage.removeItem(GOOGLE_REDIRECT_KEY);
-  window.location.replace("admin.html?v=77");
+  // Full navigation with cache-bust so post-login admin boot is never a stale blank page.
+  window.location.replace(`admin.html?v=88&t=${Date.now()}`);
 }
 
 function getOrInitAuth(app) {
@@ -105,11 +106,34 @@ async function adminRegister(email, password) {
   }
 }
 
+function shouldPreferRedirect_() {
+  return /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent);
+}
+
+async function redirectGoogle_(provider) {
+  sessionStorage.setItem(GOOGLE_REDIRECT_KEY, "1");
+  setStatus("正在跳去 Google 登入…");
+  await signInWithRedirect(auth, provider);
+  return { ok: true, pending: true };
+}
+
 async function adminGoogleLogin() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   provider.addScope("email");
   provider.addScope("profile");
+
+  if (shouldPreferRedirect_()) {
+    try {
+      return await redirectGoogle_(provider);
+    } catch (redirectErr) {
+      return {
+        ok: false,
+        message: mapAuthError(redirectErr.code),
+        code: redirectErr.code,
+      };
+    }
+  }
 
   try {
     setStatus("正在開啟 Google 登入…");
@@ -122,13 +146,10 @@ async function adminGoogleLogin() {
       err.code === "auth/popup-blocked" ||
       err.code === "auth/popup-closed-by-user" ||
       err.code === "auth/cancelled-popup-request" ||
-      /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)
+      err.code === "auth/unauthorized-domain"
     ) {
       try {
-        sessionStorage.setItem(GOOGLE_REDIRECT_KEY, "1");
-        setStatus("正在跳去 Google 登入…");
-        await signInWithRedirect(auth, provider);
-        return { ok: true, pending: true };
+        return await redirectGoogle_(provider);
       } catch (redirectErr) {
         return {
           ok: false,
@@ -163,7 +184,7 @@ async function handleRedirectResult() {
 
     if (hadGoogleRedirect) {
       fail(
-        "Google 登入未完成。請改用 Email/密碼登入，或到 Google Cloud「OAuth 同意畫面」將你的 Gmail 加入測試使用者。"
+        "Google 登入未完成（常見於瀏覽器封鎖第三方儲存）。請改用 Email/密碼登入，或確認 Firebase authDomain 已設為目前網站網域。"
       );
     }
     sessionStorage.removeItem(GOOGLE_REDIRECT_KEY);
