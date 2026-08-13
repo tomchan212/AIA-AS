@@ -111,7 +111,7 @@ function hideBootScreen() {
   document.getElementById("admin-boot")?.remove();
 }
 
-function withTimeout(promise, fallback, label, ms = 8000) {
+function withTimeout(promise, fallback, label, ms = 4000) {
   let timer;
   const timeout = new Promise((resolve) => {
     timer = setTimeout(() => {
@@ -144,7 +144,7 @@ async function startAdminForUser(user) {
       await auth.authStateReady();
       if (auth.currentUser) return;
     }
-    window.location.replace("admin-login.html?v=77");
+    window.location.replace("admin-login.html?v=89");
     return;
   }
 
@@ -152,11 +152,18 @@ async function startAdminForUser(user) {
   booted = true;
 
   try {
-    hideBootScreen();
+    // Paint shell immediately so login never feels stuck on a long boot screen.
     adminShell?.classList.remove("hidden");
-    if (viewRoot) viewRoot.innerHTML = loadingHtml("載入後台…", 72, "讀取帳戶資料");
+    adminUserEmail.textContent = user.email || "—";
+    renderNav();
+    if (viewRoot) viewRoot.innerHTML = loadingHtml("載入中…", 55, "讀取帳戶與預約");
+    hideBootScreen();
 
-    const profileRes = await withTimeout(
+    const loginEmail = String(user.email || "").toLowerCase();
+    const maybeSuper = UI_SUPER_ADMIN_EMAILS.has(loginEmail);
+
+    // Regular agents skip the Super Admin config round-trip entirely.
+    const profilePromise = withTimeout(
       ensureUserProfile(user),
       {
         ok: true,
@@ -165,22 +172,23 @@ async function startAdminForUser(user) {
         displayName: user.displayName || "",
         slug: "",
       },
-      "帳戶資料"
+      "帳戶資料",
+      4000
     );
+    const superPromise = maybeSuper
+      ? withTimeout(isSuperAdmin(), false, "管理員權限", 3000)
+      : Promise.resolve(false);
+
+    const [profileRes, backendSuperAdmin] = await Promise.all([profilePromise, superPromise]);
     if (!profileRes?.ok) {
       throw new Error(profileRes?.message || "無法建立帳戶資料");
     }
     myProfile = profileRes;
-
-    if (viewRoot) viewRoot.innerHTML = loadingHtml("載入後台…", 82, "檢查管理權限");
-    const backendSuperAdmin = await withTimeout(isSuperAdmin(), false, "管理員權限");
-    const loginEmail = String(user.email || "").toLowerCase();
-    superAdmin = backendSuperAdmin && UI_SUPER_ADMIN_EMAILS.has(loginEmail);
+    superAdmin = !!(maybeSuper && backendSuperAdmin);
 
     if (superAdmin) {
-      if (viewRoot) viewRoot.innerHTML = loadingHtml("載入後台…", 88, "讀取 agent 列表");
       setSuperAdminViewAll(true);
-      allAgents = await withTimeout(getAllAgents(), [], "Agent 列表");
+      allAgents = await withTimeout(getAllAgents(), [], "Agent 列表", 3500);
     } else {
       setSuperAdminViewAll(false);
       setViewAsOwnerId(user.uid);
@@ -189,15 +197,15 @@ async function startAdminForUser(user) {
     adminUserEmail.textContent = getCurrentUserEmail() || user.email || "—";
     renderSuperAdminBar();
     updateBookingLink();
-    if (viewRoot) viewRoot.innerHTML = loadingHtml("載入後台…", 94, "整理預約資料");
+    if (viewRoot) viewRoot.innerHTML = loadingHtml("載入中…", 85, "整理預約資料");
     await boot();
   } catch (err) {
     console.error("Admin boot failed:", err);
-    hideBootScreen();
     adminShell?.classList.remove("hidden");
     if (viewRoot) {
       viewRoot.innerHTML = warnHtml(`載入失敗：${escapeHtml(String(err?.message || err))}`);
     }
+    hideBootScreen();
   }
 }
 
@@ -219,7 +227,7 @@ if (firebaseError) {
 
 logoutBtn?.addEventListener("click", async () => {
   await adminLogout();
-  window.location.replace("admin-login.html?v=77");
+  window.location.replace("admin-login.html?v=89");
 });
 
 adminMenuToggle?.addEventListener("click", () => {
@@ -592,17 +600,20 @@ async function loadData() {
     withTimeout(
       settingsPromise,
       { ok: false, settings: defaultSettings(), message: "設定載入逾時" },
-      "設定"
+      "設定",
+      4000
     ),
     withTimeout(
       getAllAppointments(),
       { ok: false, appointments: [], message: "預約載入逾時" },
-      "預約"
+      "預約",
+      4000
     ),
     withTimeout(
       getBlockedContacts(),
       { ok: false, blocked: [], message: "封鎖名單載入逾時" },
-      "封鎖名單"
+      "封鎖名單",
+      3000
     ),
   ]);
 

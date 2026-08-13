@@ -19,9 +19,15 @@
       padding: 1.5rem; background: #fff7df; color: #1a2744; font-family: -apple-system, "PingFang TC", sans-serif;
     }
   </style>
-  <link rel="stylesheet" href="fonts.css?v=87">
-  <link rel="stylesheet" href="theme.css?v=87">
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="modulepreload" href="firebase-config.js">
+  <link rel="modulepreload" href="admin-auth-gate.js?v=89">
+  <link rel="modulepreload" href="firebase-api.js?v=89">
+  <link rel="modulepreload" href="admin-app.js?v=89">
+  <link rel="stylesheet" href="fonts.css?v=89">
+  <link rel="stylesheet" href="theme.css?v=89">
 </head>
 <body>
   <div id="admin-boot" class="admin-boot-screen">
@@ -78,9 +84,9 @@
       if (window.__adminBooted) return;
       var el = document.getElementById("admin-boot");
       if (!el) return;
-      el.innerHTML = '<div style="max-width:320px;text-align:left;line-height:1.5">載入時間過長。請檢查網絡，或<a href="admin-login.html" style="color:#da291c;font-weight:700">前往登入頁</a>。</div>';
-    }, 10000);
+      el.innerHTML = '<div style="max-width:320px;text-align:left;line-height:1.5;background:#fff7df">載入時間過長。請檢查網絡，或<a href="admin-login.html?v=89" style="color:#da291c;font-weight:700">前往登入頁</a>。</div>';
+    }, 8000);
   </script>
-  <script type="module" src="admin-auth-gate.js?v=87"></script>
+  <script type="module" src="admin-auth-gate.js?v=89"></script>
 </body>
 </html>

@@ -16,6 +16,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import {
   getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -75,6 +79,17 @@ export function getAuthInstance() {
   return auth_;
 }
 
+export function getOrInitAuth(app) {
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver,
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+
 function isConfigReady_() {
   const cfg = firebaseConfig || {};
   return Boolean(cfg.apiKey && cfg.projectId && !String(cfg.apiKey).includes("YOUR_"));
@@ -84,9 +99,10 @@ export async function initFirebase() {
   if (!isConfigReady_()) {
     throw new Error("請先在 firebase-config.js 填入 Firebase 專案設定。");
   }
+  if (app_ && db_ && auth_) return;
   app_ = getApps().length ? getApp() : initializeApp(firebaseConfig);
   db_ = getFirestore(app_);
-  auth_ = getAuth(app_);
+  auth_ = getOrInitAuth(app_);
 }
 
 export function onAuthChange(cb) {
