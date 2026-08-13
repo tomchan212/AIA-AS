@@ -1,0 +1,8 @@
+# 本機／機密（唔好上傳）
+functions/node_modules/
+functions/.env
+.firebase/
+.DS_Store
+*.log
+firebase-debug.log
+firebase-debug.*.log

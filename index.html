@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="boot-pending">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff7df">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="AIA 預約">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <title>預約諮詢 · AIA Agent</title>
+  <style>
+    html, body { margin: 0; background: #fff7df; min-height: 100%; }
+    #boot-overlay {
+      position: fixed; inset: 0; z-index: 9999; background: #fff7df;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      font-family: -apple-system, "PingFang TC", sans-serif; color: #1a2744;
+    }
+    #boot-overlay strong { font-size: 1.05rem; }
+    #boot-overlay span { margin-top: 0.4rem; color: #6b7280; font-size: 0.88rem; }
+  </style>
+  <link rel="stylesheet" href="fonts.css?v=87">
+  <link rel="stylesheet" href="theme.css?v=87">
+</head>
+<body>
+  <div id="boot-overlay"><strong>載入預約頁…</strong><span>請稍候</span></div>
+  <div class="app-shell" id="app">
+    <header class="top-bar" id="top-bar">
+      <button type="button" class="top-bar-back hidden" id="back-btn" aria-label="返回">‹</button>
+      <div class="top-bar-title">
+        <h1 id="top-title">預約諮詢</h1>
+        <p id="top-sub">AIA · 保險與儲蓄</p>
+      </div>
+      <span class="top-bar-logo brand-font">AIA</span>
+    </header>
+
+    <main class="app-body">
+      <div class="step-dots" id="step-dots">
+        <span class="step-dot active" data-step="1"></span>
+        <span class="step-dot" data-step="2"></span>
+        <span class="step-dot" data-step="3"></span>
+        <span class="step-dot" data-step="4"></span>
+      </div>
+
+      <section id="step-home">
+        <div class="hero-banner ui-card">
+          <span class="hero-tag" id="banner-tag">限時免費諮詢</span>
+          <h2 class="brand-font" id="banner-title">1對1 專屬財務規劃</h2>
+          <p id="banner-desc">選擇服務 → 選目的 → 選時段，時長先對得準。</p>
+        </div>
+
+        <div class="section-head">
+          <h3 id="services-heading">熱門諮詢服務</h3>
+        </div>
+        <div class="service-list" id="service-list"></div>
+
+        <div class="trace-box ui-card trace-box--spaced">
+          <div class="section-head section-head--compact">
+            <h3 id="trace-title">已有預約代碼？</h3>
+          </div>
+          <div class="trace-row">
+            <button type="button" class="trace-input trace-input-proxy" id="code-input-proxy">TN2VK8</button>
+            <input
+              id="code-input"
+              class="trace-input hidden"
+              type="text"
+              placeholder="TN2VK8"
+              maxlength="6"
+              minlength="6"
+              inputmode="text"
+              autocomplete="off"
+              spellcheck="false"
+              tabindex="-1"
+              aria-label="預約代碼"
+            />
+            <button type="button" class="btn-cta btn-cta-secondary btn-compact" id="code-check-btn">追蹤</button>
+          </div>
+          <p id="code-trace-msg" class="trace-msg hidden"></p>
+        </div>
+      </section>
+
+      <section id="step-purpose" class="hidden">
+        <p class="purpose-lead">揀見面目的同需時，之後先顯示啱用嘅時段。</p>
+        <div id="purpose-list" class="purpose-list"></div>
+      </section>
+
+      <section id="step-time" class="hidden">
+        <div class="agent-mini-card" id="agent-mini-card"></div>
+        <div class="timeline-legend">
+          <span><i class="legend-dot legend-dot--avail"></i> 可預約</span>
+          <span><i class="legend-dot legend-dot--busy"></i> 已預約</span>
+        </div>
+        <div id="timeline-container" class="timeline-container">
+          <div class="loading loading-card" style="--loading-progress:55%">
+            <div class="loading-row">
+              <div class="loading-spinner" aria-hidden="true"></div>
+              <div class="loading-copy">
+                <strong>載入時間表…</strong>
+                <span>讀取可預約時段</span>
+              </div>
+              <div class="loading-percent">55%</div>
+            </div>
+            <div class="loading-progress"><span class="loading-progress-bar"></span></div>
+          </div>
+        </div>
+        <div class="date-scroll date-scroll-dock" id="date-scroll"></div>
+      </section>
+
+      <section id="step-confirm" class="hidden">
+        <div class="form-card ui-card">
+          <div class="summary-strip" id="confirm-summary"></div>
+          <form id="reserve-form">
+            <div class="form-field">
+              <label for="name">姓名</label>
+              <input id="name" name="name" type="text" placeholder="請填寫姓名" required disabled tabindex="-1" autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label for="contact">電話 / WhatsApp</label>
+              <input id="contact" name="contact" type="tel" placeholder="方便我們聯絡你" required disabled tabindex="-1" autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label for="district">地區（District）</label>
+              <select id="district" name="district" required disabled tabindex="-1">
+                <option value="">請選擇地區</option>
+                <option value="中西區">中西區</option>
+                <option value="灣仔區">灣仔區</option>
+                <option value="東區">東區</option>
+                <option value="南區">南區</option>
+                <option value="油尖旺區">油尖旺區</option>
+                <option value="深水埗區">深水埗區</option>
+                <option value="九龍城區">九龍城區</option>
+                <option value="黃大仙區">黃大仙區</option>
+                <option value="觀塘區">觀塘區</option>
+                <option value="葵青區">葵青區</option>
+                <option value="荃灣區">荃灣區</option>
+                <option value="屯門區">屯門區</option>
+                <option value="元朗區">元朗區</option>
+                <option value="北區">北區</option>
+                <option value="大埔區">大埔區</option>
+                <option value="沙田區">沙田區</option>
+                <option value="西貢區">西貢區</option>
+                <option value="離島區">離島區</option>
+              </select>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="step-success" class="hidden">
+        <div class="success-card ui-card">
+          <div class="success-icon">✅</div>
+          <h2 class="success-title">預約成功！</h2>
+          <p class="success-desc">請保存你的預約代碼</p>
+          <div class="success-code" id="success-code"></div>
+          <div class="success-details" id="success-details"></div>
+          <div class="success-upcoming" id="success-upcoming"></div>
+          <div class="action-row">
+            <a id="btn-calendar" class="btn-cta btn-cta-secondary" href="#" target="_blank" rel="noopener">📅 加入 Google 日曆</a>
+            <a id="btn-whatsapp" class="btn-cta btn-cta-outline" href="#" target="_blank" rel="noopener">💬 WhatsApp 確認</a>
+            <button type="button" class="btn-cta btn-cta-primary" id="btn-new-booking">再預約一次</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="sticky-summary hidden" id="sticky-summary">
+      <div class="sticky-summary-text" id="sticky-summary-text">請點選時間格</div>
+      <button type="button" class="sticky-summary-btn" id="sticky-summary-btn" disabled>確認</button>
+    </div>
+
+    <div class="sheet-overlay hidden" id="sheet-overlay" aria-hidden="true">
+      <div class="bottom-sheet" id="slot-sheet" role="dialog">
+        <div class="sheet-handle"></div>
+        <h3 class="sheet-title">已選時段</h3>
+        <div class="sheet-summary" id="sheet-summary"></div>
+        <div class="sheet-actions">
+          <button type="button" class="btn-cta btn-cta-primary" id="sheet-confirm-btn">一鍵確認預約 →</button>
+          <button type="button" class="btn-cta btn-cta-outline" id="sheet-close-btn">返回時間表</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-bar hidden" id="bottom-bar">
+      <button type="button" class="btn-cta btn-cta-primary" id="bottom-cta" disabled>請選擇服務</button>
+    </div>
+  </div>
+
+  <script>
+    window.setTimeout(function () {
+      var el = document.getElementById("boot-overlay");
+      if (el) el.remove();
+      document.documentElement.classList.remove("boot-pending");
+    }, 4000);
+  </script>
+  <script type="module" src="book.js?v=87"></script>
+</body>
+</html>

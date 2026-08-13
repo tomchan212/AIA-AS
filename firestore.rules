@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function systemConfig() {
+      return get(/databases/$(database)/documents/system/config).data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email in ['waiwaichan212@gmail.com']
+        || (
+          exists(/databases/$(database)/documents/system/config)
+          && request.auth.token.email in systemConfig().superAdminEmails
+        )
+      );
+    }
+
+    function canAccessOwner(ownerId) {
+      return isSuperAdmin() || (isSignedIn() && request.auth.uid == ownerId);
+    }
+
+    match /system/config {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if request.auth.uid == userId || isSuperAdmin();
+    }
+
+    match /settings/{ownerId} {
+      allow read: if true;
+      allow write: if canAccessOwner(ownerId);
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasAll([
+          'code', 'date', 'start', 'end', 'contact', 'name', 'status', 'slotKey', 'ownerId'
+        ])
+        && request.resource.data.status is string
+        && request.resource.data.status.size() > 0
+        && request.resource.data.ownerId is string
+        && request.resource.data.ownerId.size() > 0;
+
+      allow update, delete: if canAccessOwner(resource.data.ownerId);
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn() && (isSuperAdmin() || resource.data.ownerId == request.auth.uid);
+      allow create: if isSignedIn()
+        && (request.resource.data.ownerId == request.auth.uid || isSuperAdmin());
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /blocked_contacts/{blockId} {
+      allow read: if isSignedIn() && (isSuperAdmin() || resource.data.ownerId == request.auth.uid);
+      allow create: if isSignedIn()
+        && (request.resource.data.ownerId == request.auth.uid || isSuperAdmin());
+      allow update, delete: if canAccessOwner(resource.data.ownerId);
+    }
+  }
+}

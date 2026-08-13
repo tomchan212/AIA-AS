@@ -1,0 +1,20 @@
+{
+  "name": "aia-appointment-functions",
+  "description": "Firestore triggers for appointment email notifications",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions,firestore",
+    "deploy": "firebase deploy --only functions",
+    "test:email": "node send-test-email.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^5.1.1",
+    "nodemailer": "^6.9.15"
+  },
+  "private": true
+}

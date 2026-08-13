@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff7df">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="AIA 後台">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="admin-manifest.json">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>預約管理後台 · AIA</title>
+  <style>
+    html, body { margin: 0; background: #fff7df; min-height: 100%; }
+    .admin-boot-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem; background: #fff7df; color: #1a2744; font-family: -apple-system, "PingFang TC", sans-serif;
+    }
+  </style>
+  <link rel="stylesheet" href="fonts.css?v=87">
+  <link rel="stylesheet" href="theme.css?v=87">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+</head>
+<body>
+  <div id="admin-boot" class="admin-boot-screen">
+    <div class="loading-card" style="--loading-progress:10%">
+      <div class="loading-row">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <div class="loading-copy">
+          <strong>檢查登入狀態…</strong>
+          <span>準備管理後台</span>
+        </div>
+        <div class="loading-percent">10%</div>
+      </div>
+      <div class="loading-progress"><span class="loading-progress-bar"></span></div>
+    </div>
+  </div>
+
+  <div class="admin-shell hidden" id="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <span class="top-bar-logo brand-font">AIA</span>
+        <div>
+          <strong>管理後台</strong>
+          <small id="admin-user-email">—</small>
+        </div>
+        <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="開啟功能選單" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+      <nav class="admin-nav" id="admin-nav"></nav>
+      <button type="button" class="admin-logout-btn" id="logout-btn">登出</button>
+    </aside>
+    <main class="admin-main">
+      <header class="admin-top">
+        <h1 id="view-title">Dashboard</h1>
+        <div class="admin-top-actions">
+          <div id="super-admin-bar" class="super-admin-bar hidden"></div>
+          <a class="admin-link-out" href="/" id="admin-booking-link" target="_blank" rel="noopener">↗ 預約頁</a>
+        </div>
+      </header>
+      <div id="view-root" class="admin-view-root"></div>
+    </main>
+  </div>
+
+  <div class="sheet-overlay hidden" id="sheet-overlay">
+    <div class="bottom-sheet admin-sheet" id="sheet-panel"></div>
+  </div>
+
+  <div class="admin-toast-host" id="admin-toast-host" aria-live="polite"></div>
+
+  <script>
+    window.setTimeout(function () {
+      if (window.__adminBooted) return;
+      var el = document.getElementById("admin-boot");
+      if (!el) return;
+      el.innerHTML = '<div style="max-width:320px;text-align:left;line-height:1.5">載入時間過長。請檢查網絡，或<a href="admin-login.html" style="color:#da291c;font-weight:700">前往登入頁</a>。</div>';
+    }, 10000);
+  </script>
+  <script type="module" src="admin-auth-gate.js?v=87"></script>
+</body>
+</html>
