@@ -198,6 +198,106 @@ export function bookingRangeFromStart(slots, start, durationMinutes, busyRanges 
   return { start, end };
 }
 
+/**
+ * Free-start booking: start may be any HH:mm (e.g. 11:07), not aligned to slot grid.
+ * Validates open/close hours, lunch gap, and busy overlaps.
+ */
+export function bookingRangeFromFreeStart(start, durationMinutes, schedule = {}, busyRanges = [], opts = {}) {
+  const raw = String(start || "").trim();
+  if (!/^\d{1,2}:\d{2}$/.test(raw)) return { ok: false, message: "請輸入有效時間（例如 11:07）" };
+  const [hh, mm] = raw.split(":").map((x) => Number(x));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) {
+    return { ok: false, message: "請輸入有效時間（例如 11:07）" };
+  }
+  const startNorm = minutesToTime(hh * 60 + mm);
+  const dur = Math.max(1, Number(durationMinutes) || SLOT_INTERVAL_MINUTES);
+  const rangeStart = timeToMinutes(startNorm);
+  const rangeEnd = rangeStart + dur;
+  const end = minutesToTime(rangeEnd);
+
+  const s = schedule || {};
+  const open = timeToMinutes(s.openTime || DAY_OPEN_TIME);
+  const close = timeToMinutes(s.closeTime || DAY_CLOSE_TIME);
+  if (rangeStart < open) {
+    return { ok: false, message: `最早可約 ${minutesToTime(open)}` };
+  }
+  if (rangeEnd > close) {
+    return { ok: false, message: `需喺 ${minutesToTime(close)} 前完成（結束時間 ${end}）` };
+  }
+
+  if (s.lunchStart && s.lunchEnd) {
+    const lunchStart = timeToMinutes(s.lunchStart);
+    const lunchEnd = timeToMinutes(s.lunchEnd);
+    if (rangeStart < lunchEnd && rangeEnd > lunchStart) {
+      return {
+        ok: false,
+        message: `此時段撞午餐休息（${s.lunchStart}–${s.lunchEnd}）`,
+      };
+    }
+  }
+
+  if (opts.dateStr && opts.now instanceof Date) {
+    const today = toYMD(opts.now);
+    if (opts.dateStr === today) {
+      const nowMin = opts.now.getHours() * 60 + opts.now.getMinutes();
+      if (rangeStart < nowMin) {
+        return { ok: false, message: "唔可以預約已經過去嘅時間" };
+      }
+    }
+  }
+
+  for (const busy of busyRanges || []) {
+    if (!busy) continue;
+    if (timesOverlap(startNorm, end, busy.start, busy.end)) {
+      return {
+        ok: false,
+        message: `同已有預約撞期（${busy.start}–${busy.end}）`,
+      };
+    }
+  }
+
+  return { ok: true, start: startNorm, end };
+}
+
+/** Free windows between busy ranges within open hours (excluding lunch). */
+export function listFreeWindows(schedule = {}, busyRanges = [], durationMinutes = 0) {
+  const s = schedule || {};
+  const open = timeToMinutes(s.openTime || DAY_OPEN_TIME);
+  const close = timeToMinutes(s.closeTime || DAY_CLOSE_TIME);
+  const lunchStart = s.lunchStart ? timeToMinutes(s.lunchStart) : null;
+  const lunchEnd = s.lunchEnd ? timeToMinutes(s.lunchEnd) : null;
+  const blocks = [...(busyRanges || [])]
+    .map((b) => ({ start: timeToMinutes(b.start), end: timeToMinutes(b.end) }))
+    .filter((b) => Number.isFinite(b.start) && Number.isFinite(b.end) && b.end > b.start)
+    .sort((a, b) => a.start - b.start);
+
+  const segments = [];
+  if (lunchStart != null && lunchEnd != null && lunchEnd > lunchStart) {
+    if (open < lunchStart) segments.push([open, Math.min(lunchStart, close)]);
+    if (lunchEnd < close) segments.push([Math.max(lunchEnd, open), close]);
+  } else {
+    segments.push([open, close]);
+  }
+
+  const windows = [];
+  const need = Math.max(0, Number(durationMinutes) || 0);
+  for (const [segStart, segEnd] of segments) {
+    let cursor = segStart;
+    const overlapping = blocks.filter((b) => b.start < segEnd && b.end > segStart);
+    for (const b of overlapping) {
+      const freeEnd = Math.min(b.start, segEnd);
+      if (freeEnd - cursor >= Math.max(need, 1)) {
+        windows.push({ start: minutesToTime(cursor), end: minutesToTime(freeEnd) });
+      }
+      cursor = Math.max(cursor, b.end);
+    }
+    if (segEnd - cursor >= Math.max(need, 1)) {
+      windows.push({ start: minutesToTime(cursor), end: minutesToTime(segEnd) });
+    }
+  }
+  return windows;
+}
+
 export function toYMD(dateObj) {
   const y = dateObj.getFullYear();
   const m = String(dateObj.getMonth() + 1).padStart(2, "0");
