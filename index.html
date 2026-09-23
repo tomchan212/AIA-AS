@@ -21,8 +21,8 @@
     #boot-overlay strong { font-size: 1.05rem; }
     #boot-overlay span { margin-top: 0.4rem; color: #6b7280; font-size: 0.88rem; }
   </style>
-  <link rel="stylesheet" href="fonts.css?v=87">
-  <link rel="stylesheet" href="theme.css?v=87">
+  <link rel="stylesheet" href="fonts.css?v=90">
+  <link rel="stylesheet" href="theme.css?v=90">
 </head>
 <body>
   <div id="boot-overlay"><strong>載入預約頁…</strong><span>請稍候</span></div>
@@ -42,13 +42,14 @@
         <span class="step-dot" data-step="2"></span>
         <span class="step-dot" data-step="3"></span>
         <span class="step-dot" data-step="4"></span>
+        <span class="step-dot" data-step="5"></span>
       </div>
 
       <section id="step-home">
         <div class="hero-banner ui-card">
           <span class="hero-tag" id="banner-tag">限時免費諮詢</span>
           <h2 class="brand-font" id="banner-title">1對1 專屬財務規劃</h2>
-          <p id="banner-desc">選擇服務 → 選目的 → 選時段，時長先對得準。</p>
+          <p id="banner-desc">選擇服務 → 選目的 → 選日期 → 選時間。</p>
         </div>
 
         <div class="section-head">
@@ -86,26 +87,51 @@
         <div id="purpose-list" class="purpose-list"></div>
       </section>
 
+      <section id="step-date" class="hidden">
+        <p class="date-pick-lead">揀一個日期，下一頁再揀開始時間。</p>
+        <div class="date-month-nav">
+          <button type="button" class="date-month-btn" id="date-prev-month" aria-label="上個月">‹</button>
+          <strong id="date-month-label">—</strong>
+          <button type="button" class="date-month-btn" id="date-next-month" aria-label="下個月">›</button>
+        </div>
+        <div class="date-weekday-row" aria-hidden="true">
+          <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        </div>
+        <div id="date-grid" class="date-grid"></div>
+        <p id="date-pick-hint" class="date-pick-hint">點選日期後會進入時間頁</p>
+      </section>
+
       <section id="step-time" class="hidden">
-        <div class="agent-mini-card" id="agent-mini-card"></div>
-        <div class="timeline-legend">
-          <span><i class="legend-dot legend-dot--avail"></i> 可預約</span>
-          <span><i class="legend-dot legend-dot--busy"></i> 已預約</span>
-        </div>
-        <div id="timeline-container" class="timeline-container">
-          <div class="loading loading-card" style="--loading-progress:55%">
-            <div class="loading-row">
-              <div class="loading-spinner" aria-hidden="true"></div>
-              <div class="loading-copy">
-                <strong>載入時間表…</strong>
-                <span>讀取可預約時段</span>
-              </div>
-              <div class="loading-percent">55%</div>
+        <div class="time-date-banner" id="time-date-banner"></div>
+        <div class="time-pick-card ui-card">
+          <p class="time-pick-lead">開始時間可以係任何分鐘，例如 <strong>11:07</strong></p>
+          <div class="time-picker" id="time-picker">
+            <div class="time-picker-col">
+              <button type="button" class="time-spinner-btn" data-part="hour" data-dir="-1" aria-label="小時減">▲</button>
+              <input id="time-hour" class="time-spinner-input" type="text" inputmode="numeric" maxlength="2" value="09" aria-label="小時">
+              <button type="button" class="time-spinner-btn" data-part="hour" data-dir="1" aria-label="小時加">▼</button>
             </div>
-            <div class="loading-progress"><span class="loading-progress-bar"></span></div>
+            <span class="time-picker-colon">:</span>
+            <div class="time-picker-col">
+              <button type="button" class="time-spinner-btn" data-part="minute" data-dir="-1" aria-label="分鐘減">▲</button>
+              <input id="time-minute" class="time-spinner-input" type="text" inputmode="numeric" maxlength="2" value="00" aria-label="分鐘">
+              <button type="button" class="time-spinner-btn" data-part="minute" data-dir="1" aria-label="分鐘加">▼</button>
+            </div>
           </div>
+          <input id="start-time-native" class="time-native-input" type="time" step="60" aria-label="開始時間">
+          <p class="time-end-preview" id="time-end-preview">結束時間：—</p>
+          <p class="time-avail-msg" id="time-avail-msg"></p>
         </div>
-        <div class="date-scroll date-scroll-dock" id="date-scroll"></div>
+
+        <div class="section-head section-head--compact">
+          <h3>建議空檔</h3>
+        </div>
+        <div id="free-window-list" class="free-window-list"></div>
+
+        <div class="section-head section-head--compact">
+          <h3>當日已預約</h3>
+        </div>
+        <div id="busy-list" class="busy-list"></div>
       </section>
 
       <section id="step-confirm" class="hidden">
@@ -166,8 +192,8 @@
     </main>
 
     <div class="sticky-summary hidden" id="sticky-summary">
-      <div class="sticky-summary-text" id="sticky-summary-text">請點選時間格</div>
-      <button type="button" class="sticky-summary-btn" id="sticky-summary-btn" disabled>確認</button>
+      <div class="sticky-summary-text" id="sticky-summary-text">請選擇開始時間</div>
+      <button type="button" class="sticky-summary-btn" id="sticky-summary-btn" disabled>確認時段</button>
     </div>
 
     <div class="sheet-overlay hidden" id="sheet-overlay" aria-hidden="true">
@@ -176,8 +202,8 @@
         <h3 class="sheet-title">已選時段</h3>
         <div class="sheet-summary" id="sheet-summary"></div>
         <div class="sheet-actions">
-          <button type="button" class="btn-cta btn-cta-primary" id="sheet-confirm-btn">一鍵確認預約 →</button>
-          <button type="button" class="btn-cta btn-cta-outline" id="sheet-close-btn">返回時間表</button>
+          <button type="button" class="btn-cta btn-cta-primary" id="sheet-confirm-btn">確認預約資料 →</button>
+          <button type="button" class="btn-cta btn-cta-outline" id="sheet-close-btn">返回改時間</button>
         </div>
       </div>
     </div>
@@ -194,6 +220,6 @@
       document.documentElement.classList.remove("boot-pending");
     }, 4000);
   </script>
-  <script type="module" src="book.js?v=87"></script>
+  <script type="module" src="book.js?v=90"></script>
 </body>
 </html>

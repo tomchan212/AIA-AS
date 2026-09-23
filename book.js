@@ -19,11 +19,13 @@ import {
   indexAppointments,
   buildGoogleCalendarUrl,
   buildWhatsAppUrl,
-  bookingRangeFromStart,
+  bookingRangeFromFreeStart,
+  listFreeWindows,
+  minutesToTime,
   timeToMinutes,
   safeStatus,
 } from "./shared.js";
-import { renderTimeline, formatDateChip } from "./timeline.js";
+import { formatDateChip } from "./timeline.js";
 
 let firebaseInitError = null;
 let SLOT_DEFS = buildSlotsFromSchedule({});
@@ -224,6 +226,7 @@ const topSub = document.getElementById("top-sub");
 const stepDots = document.querySelectorAll(".step-dot");
 const stepHome = document.getElementById("step-home");
 const stepPurpose = document.getElementById("step-purpose");
+const stepDate = document.getElementById("step-date");
 const stepTime = document.getElementById("step-time");
 const stepConfirm = document.getElementById("step-confirm");
 const stepSuccess = document.getElementById("step-success");
@@ -231,9 +234,18 @@ const appBody = document.querySelector(".app-body");
 const bottomBar = document.getElementById("bottom-bar");
 const bottomCta = document.getElementById("bottom-cta");
 const serviceList = document.getElementById("service-list");
-const agentMiniCard = document.getElementById("agent-mini-card");
-const dateScroll = document.getElementById("date-scroll");
-const timelineContainer = document.getElementById("timeline-container");
+const dateGrid = document.getElementById("date-grid");
+const dateMonthLabel = document.getElementById("date-month-label");
+const datePrevMonth = document.getElementById("date-prev-month");
+const dateNextMonth = document.getElementById("date-next-month");
+const timeDateBanner = document.getElementById("time-date-banner");
+const timeHourInput = document.getElementById("time-hour");
+const timeMinuteInput = document.getElementById("time-minute");
+const startTimeNative = document.getElementById("start-time-native");
+const timeEndPreview = document.getElementById("time-end-preview");
+const timeAvailMsg = document.getElementById("time-avail-msg");
+const freeWindowList = document.getElementById("free-window-list");
+const busyList = document.getElementById("busy-list");
 const stickySummary = document.getElementById("sticky-summary");
 const stickySummaryText = document.getElementById("sticky-summary-text");
 const stickySummaryBtn = document.getElementById("sticky-summary-btn");
@@ -267,11 +279,13 @@ let selectedService = null;
 let selectedPurpose = null;
 let selectedDateStr = null;
 let selectedSlot = null;
+let draftStartTime = "09:00";
 let year = new Date().getFullYear();
 let month = new Date().getMonth() + 1;
 let byKey = new Map();
 let byDate = new Map();
 let successViewMode = "new";
+let monthLoading = false;
 
 init();
 
@@ -330,15 +344,20 @@ async function init() {
         }
       });
       btnNewBooking.addEventListener("click", resetAll);
-      stickySummaryBtn.addEventListener("click", () => selectedSlot && openSlotSheet());
+      stickySummaryBtn.addEventListener("click", () => {
+        if (applyDraftTime_()) openSlotSheet();
+      });
       sheetConfirmBtn.addEventListener("click", () => {
         closeSheet();
-        showStep(4);
+        showStep(5);
       });
       sheetCloseBtn.addEventListener("click", closeSheet);
       sheetOverlay.addEventListener("click", (e) => {
         if (e.target === sheetOverlay) closeSheet();
       });
+      datePrevMonth?.addEventListener("click", () => shiftMonth_(-1));
+      dateNextMonth?.addEventListener("click", () => shiftMonth_(1));
+      bindTimePicker_();
     }
 
     showStep(1);
@@ -430,7 +449,7 @@ function selectPurpose(id, durationMinutes) {
   renderPurposes();
   if (currentStep === 2) {
     bottomCta.disabled = false;
-    bottomCta.textContent = `選擇 ${selectedPurpose.durationMinutes} 分鐘時段 →`;
+    bottomCta.textContent = "選擇日期 →";
   }
 }
 
@@ -455,16 +474,17 @@ function showStep(step) {
   closeSheet();
   stepHome.classList.toggle("hidden", step !== 1);
   stepPurpose?.classList.toggle("hidden", step !== 2);
-  stepTime.classList.toggle("hidden", step !== 3);
-  stepConfirm.classList.toggle("hidden", step !== 4);
-  stepSuccess.classList.toggle("hidden", step !== 5);
-  stepDots.forEach((d) => d.classList.toggle("active", Number(d.dataset.step) === Math.min(step, 4)));
+  stepDate?.classList.toggle("hidden", step !== 3);
+  stepTime.classList.toggle("hidden", step !== 4);
+  stepConfirm.classList.toggle("hidden", step !== 5);
+  stepSuccess.classList.toggle("hidden", step !== 6);
+  stepDots.forEach((d) => d.classList.toggle("active", Number(d.dataset.step) === Math.min(step, 5)));
 
-  backBtn.classList.toggle("hidden", step === 1 || step === 5);
-  bottomBar.classList.toggle("hidden", step === 3 || step === 5);
-  stickySummary.classList.toggle("hidden", step !== 3);
-  appBody.classList.toggle("app-body--has-sticky", step === 3);
-  setConfirmFieldsEnabled_(step === 4);
+  backBtn.classList.toggle("hidden", step === 1 || step === 6);
+  bottomBar.classList.toggle("hidden", step === 4 || step === 6);
+  stickySummary.classList.toggle("hidden", step !== 4);
+  appBody.classList.toggle("app-body--has-sticky", step === 4);
+  setConfirmFieldsEnabled_(step === 5);
 
   if (step === 1) {
     topTitle.textContent = pageCopy("pageTitle", "預約諮詢");
@@ -476,24 +496,31 @@ function showStep(step) {
     topSub.textContent = selectedService?.title || "";
     renderPurposes();
     bottomCta.textContent = selectedPurpose
-      ? `選擇 ${selectedPurpose.durationMinutes} 分鐘時段 →`
+      ? `選擇日期 →`
       : "請選擇目的同需時";
     bottomCta.disabled = !selectedPurpose;
   } else if (step === 3) {
-    topTitle.textContent = "選擇時段";
+    topTitle.textContent = "選擇日期";
     topSub.textContent = selectedPurpose
       ? `${selectedPurpose.title} · ${selectedPurpose.durationMinutes} 分鐘`
       : selectedService?.title || "";
-    renderAgentMini();
-    loadMonthAndRenderTime();
+    bottomCta.textContent = selectedDateStr ? "選擇時間 →" : "請先揀日期";
+    bottomCta.disabled = !selectedDateStr;
+    loadMonthAndRenderDate_();
   } else if (step === 4) {
+    topTitle.textContent = "選擇時間";
+    topSub.textContent = selectedDateStr
+      ? formatDateChip(selectedDateStr, WEEKDAYS).label
+      : selectedService?.title || "";
+    renderTimeStep_();
+  } else if (step === 5) {
     topTitle.textContent = "確認預約";
     topSub.textContent = "最後一步";
     bottomBar.classList.remove("hidden");
     bottomCta.textContent = "搶先佔用時段";
     bottomCta.disabled = false;
     renderConfirmSummary();
-  } else if (step === 5) {
+  } else if (step === 6) {
     bottomBar.classList.add("hidden");
     stickySummary.classList.add("hidden");
     if (successViewMode === "trace") {
@@ -563,22 +590,9 @@ async function renderUpcomingByContact_(contact, highlightCode = "") {
     </ul>`;
 }
 
-function renderAgentMini() {
-  const agent = appSettings?.agent;
-  agentMiniCard.innerHTML = `
-    <div class="agent-avatar">${escapeHtml(agent?.emoji || selectedService?.emoji || "👤")}</div>
-    <div class="agent-mini-info">
-      <strong>${escapeHtml(agent?.name || selectedService?.title || "Agent")}</strong>
-      <span>${escapeHtml(
-        selectedPurpose
-          ? `${selectedPurpose.title} · ${selectedPurpose.durationMinutes} 分鐘`
-          : agent?.title || selectedService?.duration || ""
-      )}</span>
-    </div>`;
-}
-
 function goBack() {
-  if (currentStep === 4) showStep(3);
+  if (currentStep === 5) showStep(4);
+  else if (currentStep === 4) showStep(3);
   else if (currentStep === 3) showStep(2);
   else if (currentStep === 2) showStep(1);
 }
@@ -586,20 +600,33 @@ function goBack() {
 function onBottomCta() {
   if (currentStep === 1 && selectedService) showStep(2);
   else if (currentStep === 2 && selectedPurpose) showStep(3);
-  else if (currentStep === 4) submitBooking();
+  else if (currentStep === 3 && selectedDateStr) showStep(4);
+  else if (currentStep === 5) submitBooking();
 }
 
-async function loadMonthAndRenderTime() {
-  selectedSlot = null;
-  updateStickySummary();
+async function shiftMonth_(delta) {
+  const d = new Date(year, month - 1 + delta, 1);
+  year = d.getFullYear();
+  month = d.getMonth() + 1;
+  await loadMonthAndRenderDate_();
+}
+
+async function loadMonthAndRenderDate_() {
+  if (dateMonthLabel) {
+    dateMonthLabel.textContent = `${year}年${month}月`;
+  }
+  if (dateGrid) {
+    dateGrid.innerHTML = loadingHtml("載入日期…", 40, "讀取可預約日子");
+  }
 
   if (firebaseInitError) {
-    timelineContainer.innerHTML = `<div class="alert-warn">${escapeHtml(firebaseInitError)}</div>`;
+    if (dateGrid) {
+      dateGrid.innerHTML = `<div class="alert-warn">${escapeHtml(firebaseInitError)}</div>`;
+    }
     return;
   }
 
-  timelineContainer.innerHTML = loadingHtml("載入時間表…", 55, "讀取可預約時段");
-
+  monthLoading = true;
   try {
     const res = await getMonthAppointments(year, month);
     if (!res.ok) throw new Error(res.message);
@@ -607,15 +634,15 @@ async function loadMonthAndRenderTime() {
   } catch (err) {
     byKey = new Map();
     byDate = new Map();
+  } finally {
+    monthLoading = false;
   }
 
-  renderDateScroll();
-  if (!selectedDateStr) {
-    const first = getAvailableDates()[0];
-    if (first) selectDate(first);
-  } else {
-    selectDate(selectedDateStr);
-  }
+  renderDateGrid_();
+}
+
+function getAvailableDateSet_() {
+  return new Set(getAvailableDates());
 }
 
 function getAvailableDates() {
@@ -629,36 +656,51 @@ function getAvailableDates() {
   return dates;
 }
 
-function renderDateScroll() {
-  const dates = getAvailableDates();
-  dateScroll.innerHTML = dates
-    .map((dateStr) => {
-      const chip = formatDateChip(dateStr, WEEKDAYS);
-      const isSelected = dateStr === selectedDateStr;
-      const count = (byDate.get(dateStr) || []).length;
-      return `
-      <button type="button" class="date-chip ${isSelected ? "selected" : ""}" data-date="${dateStr}">
-        <span class="date-chip-weekday">${chip.weekday}</span>
-        <span class="date-chip-day">${chip.day}</span>
-        <span class="date-chip-month">${chip.month}${count ? ` · ${count}筆` : ""}</span>
-      </button>`;
-    })
-    .join("");
+function renderDateGrid_() {
+  if (!dateGrid) return;
+  const available = getAvailableDateSet_();
+  const first = new Date(year, month - 1, 1);
+  const startPad = first.getDay(); // 0 Sun
+  const lastDay = new Date(year, month, 0).getDate();
+  const cells = [];
 
-  dateScroll.querySelectorAll("[data-date]").forEach((btn) => {
-    btn.addEventListener("click", () => selectDate(btn.getAttribute("data-date")));
+  for (let i = 0; i < startPad; i++) {
+    cells.push(`<span class="date-grid-cell date-grid-cell--empty"></span>`);
+  }
+
+  for (let d = 1; d <= lastDay; d++) {
+    const dateStr = toYMD(new Date(year, month - 1, d));
+    const enabled = available.has(dateStr);
+    const selected = dateStr === selectedDateStr;
+    const count = (byDate.get(dateStr) || []).filter((a) => safeStatus(a.status)).length;
+    cells.push(`
+      <button type="button"
+        class="date-grid-cell ${enabled ? "" : "is-disabled"} ${selected ? "is-selected" : ""}"
+        data-date="${dateStr}"
+        ${enabled ? "" : "disabled"}
+        aria-label="${dateStr}${count ? `，已有 ${count} 個預約` : ""}">
+        <span class="date-grid-day">${d}</span>
+        ${count ? `<span class="date-grid-count">${count}</span>` : ""}
+      </button>`);
+  }
+
+  dateGrid.innerHTML = cells.join("");
+  dateGrid.querySelectorAll("[data-date]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectDate_(btn.getAttribute("data-date"), { advance: true });
+    });
   });
-
-  const selectedEl = dateScroll.querySelector(`[data-date="${selectedDateStr}"]`);
-  selectedEl?.scrollIntoView({ inline: "center", behavior: "smooth" });
 }
 
-function selectDate(dateStr) {
+function selectDate_(dateStr, { advance = false } = {}) {
   selectedDateStr = dateStr;
   selectedSlot = null;
-  updateStickySummary();
-  renderDateScroll();
-  renderTimelineView();
+  if (currentStep === 3) {
+    bottomCta.disabled = !selectedDateStr;
+    bottomCta.textContent = selectedDateStr ? "選擇時間 →" : "請先揀日期";
+    renderDateGrid_();
+  }
+  if (advance && selectedDateStr) showStep(4);
 }
 
 function bookingDurationMinutes_() {
@@ -671,40 +713,212 @@ function busyRangesForDate_(dateStr) {
     .map((a) => ({ start: a.start, end: a.end }));
 }
 
-function renderTimelineView() {
-  if (!selectedDateStr) return;
+function pad2_(n) {
+  return String(n).padStart(2, "0");
+}
 
-  renderTimeline({
-    container: timelineContainer,
-    slots: SLOT_DEFS,
-    dateStr: selectedDateStr,
-    byKey,
-    byDate,
-    mode: "user",
-    selectedSlot,
-    durationMinutes: bookingDurationMinutes_(),
-    onAvailableClick: (slot) => {
-      const range = bookingRangeFromStart(
-        SLOT_DEFS,
-        slot.start,
-        bookingDurationMinutes_(),
-        busyRangesForDate_(selectedDateStr)
-      );
-      if (!range) {
-        alert("此時段不夠完整時長，請選其他空檔。");
-        return;
+function parseDraftParts_() {
+  const [hh, mm] = String(draftStartTime || "09:00").split(":");
+  return { hour: Number(hh) || 0, minute: Number(mm) || 0 };
+}
+
+function setDraftStartTime_(hhmm, { syncInputs = true } = {}) {
+  const check = bookingRangeFromFreeStart(hhmm, bookingDurationMinutes_(), appSettings?.schedule || {}, [], {});
+  // Even if invalid against schedule, still store normalized clock if parseable.
+  const m = String(hhmm || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (m) {
+    draftStartTime = `${pad2_(Math.min(23, Number(m[1])))}:${pad2_(Math.min(59, Number(m[2])))}`;
+  }
+  if (syncInputs) syncTimeInputs_();
+  validateAndPreviewTime_();
+  return check;
+}
+
+function syncTimeInputs_() {
+  const { hour, minute } = parseDraftParts_();
+  if (timeHourInput) timeHourInput.value = pad2_(hour);
+  if (timeMinuteInput) timeMinuteInput.value = pad2_(minute);
+  if (startTimeNative) startTimeNative.value = draftStartTime;
+}
+
+function readTimeFromInputs_() {
+  let hour = Number(String(timeHourInput?.value || "").replace(/\D/g, ""));
+  let minute = Number(String(timeMinuteInput?.value || "").replace(/\D/g, ""));
+  if (!Number.isFinite(hour)) hour = 0;
+  if (!Number.isFinite(minute)) minute = 0;
+  hour = Math.max(0, Math.min(23, hour));
+  minute = Math.max(0, Math.min(59, minute));
+  return `${pad2_(hour)}:${pad2_(minute)}`;
+}
+
+function bindTimePicker_() {
+  document.querySelectorAll(".time-spinner-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const part = btn.getAttribute("data-part");
+      const dir = Number(btn.getAttribute("data-dir") || 0);
+      const { hour, minute } = parseDraftParts_();
+      if (part === "hour") {
+        setDraftStartTime_(`${pad2_((hour + dir + 24) % 24)}:${pad2_(minute)}`);
+      } else {
+        setDraftStartTime_(`${pad2_(hour)}:${pad2_((minute + dir + 60) % 60)}`);
       }
-      selectedSlot = range;
-      updateStickySummary();
-      renderTimelineView();
-      openSlotSheet();
-    },
+    });
   });
+
+  const onManual = () => setDraftStartTime_(readTimeFromInputs_(), { syncInputs: true });
+  timeHourInput?.addEventListener("change", onManual);
+  timeMinuteInput?.addEventListener("change", onManual);
+  timeHourInput?.addEventListener("blur", onManual);
+  timeMinuteInput?.addEventListener("blur", onManual);
+
+  startTimeNative?.addEventListener("change", () => {
+    if (startTimeNative.value) setDraftStartTime_(startTimeNative.value);
+  });
+  startTimeNative?.addEventListener("input", () => {
+    if (startTimeNative.value) setDraftStartTime_(startTimeNative.value);
+  });
+}
+
+function defaultStartForDate_() {
+  const schedule = appSettings?.schedule || {};
+  const open = schedule.openTime || "09:00";
+  const today = toYMD(new Date());
+  if (selectedDateStr === today) {
+    const now = new Date();
+    const rounded = now.getHours() * 60 + now.getMinutes() + 1;
+    const openMin = timeToMinutes(open);
+    return minutesToTime(Math.max(openMin, rounded));
+  }
+  return open;
+}
+
+function renderTimeStep_() {
+  if (!selectedDateStr) {
+    showStep(3);
+    return;
+  }
+
+  const chip = formatDateChip(selectedDateStr, WEEKDAYS);
+  if (timeDateBanner) {
+    timeDateBanner.innerHTML = `
+      <div class="time-date-banner-text">
+        <strong>${escapeHtml(chip.label)}</strong>
+        <span>${escapeHtml(selectedPurpose?.title || "")} · ${bookingDurationMinutes_()} 分鐘</span>
+      </div>
+      <button type="button" class="time-date-change" id="time-change-date">改日期</button>`;
+    document.getElementById("time-change-date")?.addEventListener("click", () => showStep(3));
+  }
+
+  if (!draftStartTime || currentStep === 4) {
+    // Keep previous draft if user only went back briefly; seed when empty.
+    if (!/^\d{2}:\d{2}$/.test(draftStartTime)) draftStartTime = defaultStartForDate_();
+  }
+  if (!selectedSlot) {
+    draftStartTime = draftStartTime || defaultStartForDate_();
+  } else {
+    draftStartTime = selectedSlot.start;
+  }
+
+  syncTimeInputs_();
+  renderBusyList_();
+  renderFreeWindows_();
+  validateAndPreviewTime_();
+}
+
+function renderBusyList_() {
+  if (!busyList) return;
+  const busy = busyRangesForDate_(selectedDateStr).sort((a, b) => a.start.localeCompare(b.start));
+  if (!busy.length) {
+    busyList.innerHTML = `<p class="busy-list-empty">呢日暫時未有其他預約</p>`;
+    return;
+  }
+  busyList.innerHTML = busy
+    .map(
+      (b) =>
+        `<div class="busy-list-item"><span>已預約</span><strong>${escapeHtml(b.start)} – ${escapeHtml(b.end)}</strong></div>`
+    )
+    .join("");
+}
+
+function renderFreeWindows_() {
+  if (!freeWindowList) return;
+  const windows = listFreeWindows(
+    appSettings?.schedule || {},
+    busyRangesForDate_(selectedDateStr),
+    bookingDurationMinutes_()
+  );
+  if (!windows.length) {
+    freeWindowList.innerHTML = `<p class="busy-list-empty">呢日冇足夠連續空檔</p>`;
+    return;
+  }
+  freeWindowList.innerHTML = windows
+    .map(
+      (w) => `
+      <button type="button" class="free-window-chip" data-start="${escapeHtml(w.start)}">
+        <strong>${escapeHtml(w.start)}</strong>
+        <span>空檔至 ${escapeHtml(w.end)}</span>
+      </button>`
+    )
+    .join("");
+  freeWindowList.querySelectorAll("[data-start]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setDraftStartTime_(btn.getAttribute("data-start"));
+      applyDraftTime_();
+    });
+  });
+}
+
+function validateAndPreviewTime_() {
+  const res = bookingRangeFromFreeStart(
+    draftStartTime,
+    bookingDurationMinutes_(),
+    appSettings?.schedule || {},
+    busyRangesForDate_(selectedDateStr),
+    { dateStr: selectedDateStr, now: new Date() }
+  );
+
+  if (timeEndPreview) {
+    if (res.ok) {
+      timeEndPreview.innerHTML = `結束時間：<strong>${escapeHtml(res.end)}</strong>（${bookingDurationMinutes_()} 分鐘）`;
+    } else {
+      const endGuess = minutesToTime(timeToMinutes(draftStartTime) + bookingDurationMinutes_());
+      timeEndPreview.innerHTML = `結束時間：<strong>${escapeHtml(endGuess)}</strong>（${bookingDurationMinutes_()} 分鐘）`;
+    }
+  }
+
+  if (timeAvailMsg) {
+    if (res.ok) {
+      timeAvailMsg.className = "time-avail-msg is-ok";
+      timeAvailMsg.textContent = `可以預約 ${res.start} – ${res.end}`;
+    } else {
+      timeAvailMsg.className = "time-avail-msg is-bad";
+      timeAvailMsg.textContent = res.message || "此時段唔可用";
+    }
+  }
+
+  if (res.ok) {
+    selectedSlot = { start: res.start, end: res.end };
+  } else {
+    selectedSlot = null;
+  }
+  updateStickySummary();
+  return res;
+}
+
+function applyDraftTime_() {
+  const res = validateAndPreviewTime_();
+  if (!res.ok) {
+    alert(res.message || "此時段唔可用");
+    return false;
+  }
+  selectedSlot = { start: res.start, end: res.end };
+  updateStickySummary();
+  return true;
 }
 
 function updateStickySummary() {
   if (!selectedSlot || !selectedDateStr || !selectedService) {
-    stickySummaryText.textContent = "請選擇可預約時段";
+    stickySummaryText.textContent = "輸入開始時間（例如 11:07）";
     stickySummaryBtn.disabled = true;
     return;
   }
@@ -814,7 +1028,7 @@ async function submitBooking() {
   });
   await renderUpcomingByContact_(contact, res.code);
 
-  showStep(5);
+  showStep(6);
 }
 
 async function onCodeTrace() {
@@ -865,7 +1079,7 @@ async function onCodeTrace() {
   });
   await renderUpcomingByContact_(appt.contact, appt.code || code);
   codeTraceMsg.classList.add("hidden");
-  showStep(5);
+  showStep(6);
 }
 
 function resetAll() {
