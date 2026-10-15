@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff7df">
+  <title>保單組合檢視 · AIA</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="portfolio.css">
+</head>
+<body class="portfolio-page">
+  <a class="skip-link" href="#client-facts">跳到客戶資料</a>
+  <header class="portfolio-top">
+    <div>
+      <p class="portfolio-kicker brand-font">AIA</p>
+      <h1 id="page-title" data-i18n="pageTitle">保單組合檢視</h1>
+      <p id="page-lead" data-i18n="pageLead">供持牌顧問使用的決策支援工具。結果不是受規管的理財、保險或稅務建議。</p>
+    </div>
+    <div class="portfolio-tools">
+      <a class="portfolio-tool" href="admin.html" data-i18n="back">返回後台</a>
+      <button type="button" class="portfolio-tool" id="lang-toggle">EN</button>
+      <button type="button" class="portfolio-tool" id="theme-toggle" aria-pressed="false">Dark</button>
+      <button type="button" class="portfolio-tool" id="motion-toggle" aria-pressed="false">Motion</button>
+    </div>
+  </header>
+
+  <main class="portfolio-main">
+    <section class="glass-card disclaimer-card" aria-labelledby="pics-title">
+      <h2 id="pics-title" data-i18n="picsTitle">收集個人資料說明</h2>
+      <p data-i18n="picsBody">此頁只在你的瀏覽器內計算，不會把收入、保單或姓名儲存到伺服器或本機。請只輸入完成檢視所需的資料，不要輸入身份證號碼。</p>
+      <p class="disclaimer-banner" data-i18n="disclaimer">估算 — 並非稅務或理財建議。請以保單文件及稅務局最新指引核對。</p>
+      <label class="consent-row">
+        <input type="checkbox" id="consent">
+        <span data-i18n="consent">我確認這是持牌顧問的決策支援，已向客戶說明用途，並且不會在此頁輸入身份證號碼。</span>
+      </label>
+    </section>
+
+    <section class="glass-card" id="client-facts">
+      <div class="section-row">
+        <h2 data-i18n="clientTitle">客戶資料</h2>
+        <div class="section-actions">
+          <button type="button" class="portfolio-tool" id="sample-btn" data-i18n="sample">載入匿名示範</button>
+          <button type="button" class="portfolio-tool" id="clear-btn" data-i18n="clear">清除本頁資料</button>
+        </div>
+      </div>
+      <div class="fact-grid">
+        <label> <span data-i18n="income">每年入息（港元）</span> <input id="income" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="liabilities">未償還負債（港元）</span> <input id="liabilities" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="dependants">供養儲備（港元）</span> <input id="dependants" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="liquid">流動資產（港元）</span> <input id="liquid" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="age">受保人年齡</span> <input id="age" inputmode="numeric" autocomplete="off"> </label>
+        <label> <span data-i18n="treatment">危疾治療緩衝（港元）</span> <input id="treatment" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="medicalPref">期望每年醫療限額（港元）</span> <input id="medical-pref" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="accidentTarget">意外保障目標（港元）</span> <input id="accident-target" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="nci">估算應課稅入息淨額（未扣 VHIS／QDAP／TVC）</span> <input id="nci" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="tvc">本課稅年度已付 MPF TVC（港元）</span> <input id="tvc" inputmode="decimal" autocomplete="off"> </label>
+      </div>
+      <p id="client-error" class="field-error" role="alert"></p>
+    </section>
+
+    <section class="glass-card">
+      <h2 data-i18n="policyTitle">保單</h2>
+      <form id="policy-form" class="fact-grid">
+        <label> <span data-i18n="product">產品名稱</span> <input id="product" required autocomplete="off"> </label>
+        <label> <span data-i18n="insurer">保險公司代碼</span> <input id="insurer" autocomplete="off"> </label>
+        <label> <span data-i18n="category">類別</span>
+          <select id="category">
+            <option value="LIFE">人壽 / Life</option>
+            <option value="CRITICAL_ILLNESS">危疾 / Critical illness</option>
+            <option value="MEDICAL">醫療 / Medical</option>
+            <option value="ACCIDENT">意外 / Accident</option>
+            <option value="SAVINGS_ANNUITY">儲蓄／年金 / Savings</option>
+            <option value="OTHER">其他 / Other</option>
+          </select>
+        </label>
+        <label> <span data-i18n="currency">貨幣</span>
+          <select id="currency">
+            <option value="HKD">HKD</option>
+            <option value="USD">USD</option>
+            <option value="RMB">RMB</option>
+          </select>
+        </label>
+        <label> <span data-i18n="premiumPaid">本年度已付保費</span> <input id="premium-paid" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="sumAssured">保額</span> <input id="sum-assured" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="medicalLimit">每年醫療限額</span> <input id="medical-limit" inputmode="decimal" autocomplete="off"> </label>
+        <label> <span data-i18n="insured">受保人（例如：本人、配偶、子女）</span> <input id="insured" autocomplete="off"> </label>
+        <label> <span data-i18n="coverage">保障期</span>
+          <select id="coverage-kind">
+            <option value="whole">終身 / Whole of life</option>
+            <option value="years">年期 / Years</option>
+            <option value="toAge">至歲數 / To age</option>
+          </select>
+        </label>
+        <label> <span data-i18n="inception">生效日</span> <input id="inception" type="date"> </label>
+        <label> <span data-i18n="years">年期</span> <input id="coverage-years" inputmode="numeric" autocomplete="off"> </label>
+        <label> <span data-i18n="toAge">保障至歲數</span> <input id="coverage-age" inputmode="numeric" autocomplete="off"> </label>
+        <label class="check-row"> <input id="vhis" type="checkbox"> <span data-i18n="vhis">VHIS 自願醫保認可產品</span> </label>
+        <label class="check-row"> <input id="qdap" type="checkbox"> <span data-i18n="qdap">QDAP 合資格延期年金</span> </label>
+        <label class="check-row"> <input id="in-force" type="checkbox" checked> <span data-i18n="inForce">客戶確認仍然生效</span> </label>
+        <p id="policy-error" class="field-error" role="alert"></p>
+        <button type="submit" class="portfolio-primary" data-i18n="addPolicy">加入保單</button>
+      </form>
+      <div id="policy-list" class="policy-list"></div>
+    </section>
+
+    <section class="glass-card" id="results" aria-live="polite">
+      <div class="section-row">
+        <h2 data-i18n="resultsTitle">檢視結果</h2>
+        <button type="button" class="portfolio-tool" id="print-btn" data-i18n="print">列印／儲存報告</button>
+      </div>
+      <div id="results-body"></div>
+    </section>
+  </main>
+  <script type="module" src="portfolio/app.js"></script>
+</body>
+</html>
