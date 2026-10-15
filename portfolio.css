@@ -264,9 +264,105 @@ body.portfolio-page[data-motion="reduce"] * {
   animation: none !important;
 }
 
+.quest-progress {
+  font-weight: 800;
+  margin: 0;
+}
+
+.quest-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.quest-cards {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.quest-card {
+  min-height: 44px;
+  text-align: left;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 0.8rem;
+  cursor: pointer;
+}
+
+.quest-card.is-selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.quest-actions,
+.fortress-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.quest-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.quest-field input[type="range"] {
+  width: 100%;
+  min-height: 44px;
+}
+
+.quest-readout {
+  margin: 0;
+}
+
+.quest-meter {
+  height: 0.7rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-border) 70%, transparent);
+  overflow: hidden;
+}
+
+.quest-meter-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--color-primary);
+}
+
+.quest-meter-fill.is-neutral {
+  background: var(--color-text-muted);
+}
+
+.fortress-card {
+  flex: 1 1 140px;
+  min-height: 72px;
+  border-radius: var(--radius-md);
+  padding: 0.7rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fortress-card.is-locked {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-meter-fill {
+    transition: none;
+  }
+}
+
 @media print {
   .portfolio-tools,
-  #policy-form,
   #sample-btn,
   #clear-btn,
   #print-btn,
@@ -277,4 +373,5 @@ body.portfolio-page[data-motion="reduce"] * {
     break-inside: avoid;
     backdrop-filter: none;
   }
+}
 }

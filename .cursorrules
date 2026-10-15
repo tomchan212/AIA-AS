@@ -217,3 +217,9 @@ When building form inputs, OCR intake, or any end-user data collection, follow t
 4. Mark uncertain regulatory or actuarial figures **[VERIFY]**.
 5. Ship the calculation and its tests together.
 6. Before finishing, check: integer money, config not hardcoded, no PII in logs or plaintext storage, bilingual disclaimer, empty and error states, quest screens with at most two inputs, meters driven by domain functions, OCR card assignment instead of a raw dump, and no placeholder stubs.
+
+## 8. Quest data entry on the current site
+
+End-user collection on `portfolio.html` uses the quest stages in `portfolio/domain/quest.js`: Medical Shield, Critical Illness Barrier, Life Fortress, then Savings & Treasury. An input screen has at most two fields. Skip stores `unknown`. "I don't have this" stores `none_confirmed`. Ratios come from `computeStageFeedback` and the gap engine. Missing inputs stay insufficient data.
+
+Quick and professional layouts share one draft. The draft is encrypted with AES-GCM in IndexedDB and is not written to `localStorage`. This static site cannot verify an adviser custom claim, so professional mode only changes layout. OCR card reveal is not connected; document rarity remains a tested pure function. Reward levels shown in the page are local progress indicators until a Cloud Function validates them.

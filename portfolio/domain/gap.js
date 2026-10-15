@@ -20,8 +20,16 @@ function resultForTarget({ id, existingCents, targetCents, steps }) {
   };
 }
 
-function insufficient(id, missing, existingCents) {
-  return { id, status: "insufficient_data", missing, existingCents };
+function insufficient(id, missing, existingCents, approximate = false) {
+  return { id, status: "insufficient_data", missing, existingCents, approximate };
+}
+
+function withPrecision(dimension, approximate) {
+  return approximate ? { ...dimension, approximate: true } : dimension;
+}
+
+function categoryIsApproximate(policies, category) {
+  return policies.some((policy) => policy.category === category && policy.precision === "approximate");
 }
 
 function sumField(policies, category, field) {
@@ -54,9 +62,10 @@ export function calculateProtectionGap({
   if (client.dependantsFundCents == null) lifeMissing.push("dependantsFund");
   if (client.liquidAssetsCents == null) lifeMissing.push("liquidAssets");
 
+  const lifeApprox = categoryIsApproximate(inForceHkd, "LIFE") || client.precision?.liabilities === "approximate" || client.precision?.liquidAssets === "approximate";
   const life = lifeMissing.length
-    ? insufficient("life", lifeMissing, lifeExisting)
-    : resultForTarget({
+    ? insufficient("life", lifeMissing, lifeExisting, lifeApprox)
+    : withPrecision(resultForTarget({
         id: "life",
         existingCents: lifeExisting,
         targetCents: Math.max(
@@ -73,14 +82,15 @@ export function calculateProtectionGap({
           { key: "minus_liquid_assets", cents: -client.liquidAssetsCents },
           { key: "existing_life_cover", cents: lifeExisting },
         ],
-      });
+      }), lifeApprox);
 
   const ciMissing = [];
   if (client.annualIncomeCents == null) ciMissing.push("annualIncome");
   if (client.treatmentBufferCents == null) ciMissing.push("treatmentBuffer");
+  const ciApprox = categoryIsApproximate(inForceHkd, "CRITICAL_ILLNESS");
   const ci = ciMissing.length
-    ? insufficient("critical_illness", ciMissing, ciExisting)
-    : resultForTarget({
+    ? insufficient("critical_illness", ciMissing, ciExisting, ciApprox)
+    : withPrecision(resultForTarget({
         id: "critical_illness",
         existingCents: ciExisting,
         targetCents:
@@ -90,12 +100,13 @@ export function calculateProtectionGap({
           { key: "treatment_buffer", cents: client.treatmentBufferCents },
           { key: "existing_ci_cover", cents: ciExisting },
         ],
-      });
+      }), ciApprox);
 
+  const medicalApprox = categoryIsApproximate(inForceHkd, "MEDICAL");
   const medical =
     client.preferredMedicalAnnualLimitCents == null
-      ? insufficient("medical", ["preferredMedicalAnnualLimit"], medicalExisting)
-      : resultForTarget({
+      ? insufficient("medical", ["preferredMedicalAnnualLimit"], medicalExisting, medicalApprox)
+      : withPrecision(resultForTarget({
           id: "medical",
           existingCents: medicalExisting,
           targetCents: Math.max(0, client.preferredMedicalAnnualLimitCents),
@@ -103,7 +114,7 @@ export function calculateProtectionGap({
             { key: "preferred_annual_limit", cents: client.preferredMedicalAnnualLimitCents },
             { key: "existing_medical_annual_limit", cents: medicalExisting },
           ],
-        });
+        }), medicalApprox);
 
   const accident =
     client.accidentTargetCents == null
