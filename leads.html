@@ -13,16 +13,19 @@
     <div>
       <p class="leads-kicker">AIA</p>
       <h1>冷電名單</h1>
-      <p>虛擬姓名同香港流動號碼格式，只供表格演練。請勿把隨機號碼當作真實客戶致電。</p>
+      <p>打陌生電話之前唔知對方姓名。打完之後，先由你自己填姓名同 remarks。新增時只記錄你打過的號碼，不會自動編名。</p>
     </div>
     <a class="leads-link" href="admin.html">返回後台</a>
   </header>
   <main class="leads-main">
     <section class="leads-card">
-      <label>生成人數
-        <input id="lead-count" type="number" min="1" max="50" value="8">
-      </label>
-      <button type="button" id="generate-btn" class="leads-primary">生成名單</button>
+      <h2>新增這通電話</h2>
+      <form id="add-form">
+        <label>你打過的號碼
+          <input id="lead-number" type="tel" inputmode="numeric" placeholder="9123 4567" autocomplete="off">
+        </label>
+        <button type="submit" class="leads-primary">新增</button>
+      </form>
     </section>
     <section class="leads-card">
       <h2>更新狀態</h2>

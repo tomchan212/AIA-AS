@@ -1,4 +1,4 @@
-import { createLeadList, parseStatusCommand, toMarkdownTable, updateLeadStatus } from "./list.js";
+import { blankLead, parseStatusCommand, toMarkdownTable, updateLeadStatus } from "./list.js";
 
 const tableHost = document.getElementById("lead-table");
 const markdownHost = document.getElementById("lead-markdown");
@@ -14,21 +14,21 @@ function escapeHtml(value) {
 }
 
 function render() {
-  markdownHost.textContent = rows.length ? toMarkdownTable(rows) : "尚未生成名單。";
+  markdownHost.textContent = rows.length ? toMarkdownTable(rows) : "打完電話後，新增該號碼，再自行填姓名同 remarks。";
   if (!rows.length) {
-    tableHost.innerHTML = "<p>尚未生成名單。</p>";
+    tableHost.innerHTML = "<p>未有記錄。</p>";
     return;
   }
   const body = rows.map((row, index) => `
     <tr>
-      <td>${escapeHtml(row.Name)}</td>
+      <td><input data-field="Name" data-index="${index}" value="${escapeHtml(row.Name)}" placeholder="打完先填姓名" aria-label="Name"></td>
       <td>${escapeHtml(row["no."])}</td>
       <td>
-        <select data-index="${index}" aria-label="${escapeHtml(row.Name)} status">
+        <select data-index="${index}" aria-label="status(accept/not)">
           ${["Pending", "accept", "not"].map((status) => `<option ${row["status(accept/not)"] === status ? "selected" : ""}>${status}</option>`).join("")}
         </select>
       </td>
-      <td><input data-remarks="${index}" value="${escapeHtml(row.remarks)}" aria-label="${escapeHtml(row.Name)} remarks"></td>
+      <td><input data-field="remarks" data-index="${index}" value="${escapeHtml(row.remarks)}" placeholder="打完先填 remarks" aria-label="remarks"></td>
     </tr>`).join("");
   tableHost.innerHTML = `
     <table>
@@ -37,7 +37,8 @@ function render() {
     </table>`;
   tableHost.querySelectorAll("select").forEach((select) => {
     select.addEventListener("change", () => {
-      const result = updateLeadStatus(rows, rows[Number(select.dataset.index)].Name, select.value);
+      const index = Number(select.dataset.index);
+      const result = updateLeadStatus(rows, rows[index]["no."], select.value);
       if (!result.ok) return;
       rows = result.rows;
       render();
@@ -45,15 +46,27 @@ function render() {
   });
   tableHost.querySelectorAll("input").forEach((input) => {
     input.addEventListener("change", () => {
-      rows[Number(input.dataset.remarks)].remarks = input.value;
+      const index = Number(input.dataset.index);
+      rows[index][input.dataset.field] = input.value.trim();
       render();
     });
   });
 }
 
-document.getElementById("generate-btn").addEventListener("click", () => {
-  rows = createLeadList(document.getElementById("lead-count").value);
-  message.textContent = "已生成虛擬名單。";
+document.getElementById("add-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const result = blankLead(document.getElementById("lead-number").value);
+  if (!result.ok) {
+    message.textContent = result.message;
+    return;
+  }
+  if (rows.some((row) => row["no."] === result.row["no."])) {
+    message.textContent = "這個號碼已經在名單裡。";
+    return;
+  }
+  rows = [...rows, result.row];
+  document.getElementById("lead-number").value = "";
+  message.textContent = "已新增。姓名同 remarks 留空，打完電話再填。";
   render();
 });
 
