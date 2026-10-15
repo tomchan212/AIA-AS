@@ -83,11 +83,12 @@ Current slice:
 
 ### 2.3 State, API, and data
 
-- Server state is not copied into a global store. This page keeps review inputs in memory only.
-- Do not persist client PII in `localStorage` or `sessionStorage`. Theme and language preferences are not PII and may be stored.
+- Server state is not copied into a global store.
+- End-user data collection uses one small quest store (Zustand, or React state until that stack exists). One store per feature. No monolithic store.
+- Persist quest progress per stage so a refresh or a switch between Quick-Input and Professional mode does not drop completed answers. Theme and language may use `localStorage`. Financial amounts and names must not sit in plaintext `localStorage` or `sessionStorage`; use in-memory state for the session, or encrypted IndexedDB (non-extractable Web Crypto key) if progress must survive a reload. Clear that store on logout or session timeout. Never persist an HKID number.
 - Money is integer cents plus an ISO currency code. Never store or calculate money as a float.
 - Expected failures return a result object. Do not throw for invalid user input.
-- OCR, if added later, is asynchronous and low-confidence financial fields must stay in `needs_review`.
+- OCR is asynchronous. Low-confidence financial fields stay `needs_review` and cannot be auto-slotted into a defense slot.
 
 ---
 
@@ -129,7 +130,32 @@ Normalise every policy into one shape: category, currency, sums and premiums in 
 - Missing inputs produce `insufficient_data`. Never substitute zero for a missing input.
 - Each successful dimension exposes the same steps used by the calculation.
 
-### 4.4 Reports
+### 4.4 Gamified progressive data entry (business logic)
+
+End-user intake is a sequence of quests, not a single data model dumped into one form. The domain model in §4.1–§4.3 is unchanged; the quest layer only decides **which inputs are asked, in which order, and which coverage metaphor they update**.
+
+Canonical quest order. Do not skip a stage, merge two stages onto one screen, or invent extra stages without an explicit product change:
+
+| Stage | Quest id | User supplies | Domain fields written | Unlock label | Live meter |
+|---|---|---|---|---|---|
+| 1 | `medical-shield` | VHIS / hospitalisation cover | `isVhisCertified`, medical annual limit, premium paid | Medical Shield LV1 | Shield % = medical `coverageRatio` |
+| 2 | `ci-barrier` | Critical illness sum assured | `CRITICAL_ILLNESS.sumAssuredCents` | Anti-Debuff Barrier | Barrier % = CI `coverageRatio` |
+| 3 | `life-fortress` | Life cover against mortgages and other debts | `LIFE.sumAssuredCents`, outstanding liabilities | Legacy Fortress | Fortress % = life `coverageRatio` |
+| 4 | `savings-vault` | MPF / savings cash value | TVC paid, QDAP premium, savings cash value | Gold Reserve Vault | Vault fill = amount captured vs the combined QDAP/TVC cap **[CONFIG]** |
+
+Rules:
+
+1. Each stage accepts **at most two inputs** on screen (for example one slider plus one preset, or one amount plus one yes/no card). A second fact that belongs to the same stage waits until the first control is committed, or moves to the next beat of that same stage. It never becomes a long form.
+2. Unlock labels are cosmetic milestones. They are not products, levels of suitability, or a recommendation to buy. Copy must say the meter is an illustration of the §4.3 gap, labelled decision support.
+3. A stage with missing inputs stays locked and reports `insufficient_data`. Do not fill the meter with zero or with a sample value.
+4. Real-time meters call the same pure functions as the report (`calculateProtectionGap`, `calculateTaxEstimate`). Do not keep a second formula in the widget.
+5. Preset buttons and slider ticks are **[CONFIG]** (for example HK$0, 500,000, 1,000,000, 2,000,000). They write integer cents. A custom amount is still one control, not a table of fields.
+6. Two modes share one quest store:
+   - **Fast Quick-Input Mode** (default for end users): one stage per screen, meters, presets, card reveal.
+   - **Professional Detailed Form Mode** (agents reviewing a client): every captured field visible for correction, still grouped by the four quests, never a dense multi-column entry grid. Switching mode does not clear answers.
+7. OCR results are proposed stats on a card, not committed facts. The user assigns each stat into a fortress slot with one tap or a drag. Unassigned or low-confidence stats stay on the card in `needs_review`.
+
+### 4.5 Reports
 
 - A report snapshot shows inputs' calculated outputs, tax year, benchmark version, timestamp, and the disclaimer.
 - Watermark or withhold a final report while required review items are open.
@@ -141,9 +167,34 @@ Normalise every policy into one shape: category, currency, sums and premiums in 
 
 - Mobile first. Touch targets at least 44×44 px.
 - Glass surfaces are an accent and fall back to a solid fill when transparency is reduced.
-- Light and dark themes. Visible focus. A text table accompanies the radar chart.
+- Light and dark themes. Visible focus. A text table accompanies the radar chart and every game meter.
 - Loading, empty, error, and success states are explicit.
-- Do not gamify in a way that pressures a client to buy. Do not block the review behind a game step.
+- Gamification illustrates cover the client already described. It must not pressure a purchase, name a product to buy, or block the agent’s professional review behind a badge.
+
+### 5.1 Gamified progressive data entry architecture and UI logic
+
+When building form inputs, OCR intake, or any end-user data collection, follow this section. These rules override any habit of generating a long static form.
+
+**No long static forms.** Do not generate a traditional long form, a wizard with more than two inputs on a screen, or a multi-column data table for user input. Chunk collection into the four quests in §4.4. Agents use Professional Detailed Form Mode to review those same quests; that mode is a stacked list of the committed answers with edit controls, not a spreadsheet.
+
+**Quest screens.**
+
+- Stage 1, Medical Shield: one control for VHIS / hospitalisation cover. Committing it plays the “Medical Shield LV1” unlock and moves the shield meter.
+- Stage 2, Critical Illness Barrier: one control for CI sum assured. Committing it unlocks “Anti-Debuff Barrier”.
+- Stage 3, Life Protection Fortification: life cover and debts are two beats, one input each. Committing both unlocks “Legacy Fortress”.
+- Stage 4, Savings and Treasury: MPF / savings cash value, then TVC or QDAP if still empty. Committing the stage unlocks “Gold Reserve Vault”.
+- Each screen shows quest index (1/4), a progress meter, Back, and a single primary action. No bottom sheet of extra fields.
+
+**Widgets.** Prefer a slider, a single-tap preset chip, or an option card. Use a raw numeric field only as the accessible fallback on the same control (one number, labelled, 44px target). As the value changes, update only `transform` and `opacity` on the meter: shield coverage %, barrier integrity, fortress HP, or a dragon-threat level derived from `1 - min(coverageRatio, 1)`. The dragon is the uncovered gap, not an insurer and not a call to action. Honour `prefers-reduced-motion`: swap the animation for an instant text and bar update.
+
+**OCR card unboxing.** When OCR returns a policy, show one modal:
+
+- The parsed policy is an animated card reveal. Rarity is confidence, not value: at or above the review threshold **[CONFIG, default 0.85]** the card is marked SSR; below it, SR and visually flagged for review. Reduced motion uses a static card.
+- Stats on the card (sum assured, annual premium, VHIS / QDAP flags) are text, never HTML from OCR.
+- The user drags a stat, or single-taps it, onto a fortress slot (Medical Shield, CI Barrier, Legacy Fortress, Gold Reserve Vault). A tap-only path must exist. Dropping a stat writes the canonical field and reruns the domain function.
+- Low-confidence money cannot auto-assign. The slot shows “needs review” until the user confirms the figure.
+
+**Mode switch.** A persistent control toggles Fast Quick-Input and Professional Detailed Form. The quest store is the source of truth for both. Professional mode may reveal every committed field for correction, two fields per viewport group, and must show the same meters and the text alternative.
 
 ---
 
@@ -165,4 +216,4 @@ Normalise every policy into one shape: category, currency, sums and premiums in 
 3. Ask first only when the answer changes the data model, a financial rule, privacy, or a public API. Otherwise state the assumption and proceed.
 4. Mark uncertain regulatory or actuarial figures **[VERIFY]**.
 5. Ship the calculation and its tests together.
-6. Before finishing, check: integer money, config not hardcoded, no PII in logs or storage, bilingual disclaimer, empty and error states, and no placeholder stubs.
+6. Before finishing, check: integer money, config not hardcoded, no PII in logs or plaintext storage, bilingual disclaimer, empty and error states, quest screens with at most two inputs, meters driven by domain functions, OCR card assignment instead of a raw dump, and no placeholder stubs.
