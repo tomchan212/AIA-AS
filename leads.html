@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>冷電名單 · AIA</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="leads.css">
+</head>
+<body class="leads-page">
+  <header class="leads-top">
+    <div>
+      <p class="leads-kicker">AIA</p>
+      <h1>冷電名單</h1>
+      <p>虛擬姓名同香港流動號碼格式，只供表格演練。請勿把隨機號碼當作真實客戶致電。</p>
+    </div>
+    <a class="leads-link" href="admin.html">返回後台</a>
+  </header>
+  <main class="leads-main">
+    <section class="leads-card">
+      <label>生成人數
+        <input id="lead-count" type="number" min="1" max="50" value="8">
+      </label>
+      <button type="button" id="generate-btn" class="leads-primary">生成名單</button>
+    </section>
+    <section class="leads-card">
+      <h2>更新狀態</h2>
+      <form id="command-form">
+        <input id="command-input" type="text" placeholder="將張偉成的 status 改為 accept" autocomplete="off">
+        <button type="submit" class="leads-primary">更新</button>
+      </form>
+      <p id="command-msg" role="status"></p>
+    </section>
+    <section class="leads-card">
+      <h2>名單</h2>
+      <div id="lead-table"></div>
+    </section>
+    <section class="leads-card">
+      <h2>Markdown</h2>
+      <pre id="lead-markdown"></pre>
+    </section>
+  </main>
+  <script type="module" src="leads/app.js"></script>
+</body>
+</html>
