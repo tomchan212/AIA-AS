@@ -1,5 +1,11 @@
 .portfolio-page {
-  --portfolio-glass: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  --portfolio-glass: color-mix(in srgb, #102033 78%, transparent);
+  --citadel-emerald: #1f8f68;
+  --citadel-amber: #c4841d;
+  --citadel-crimson: #c23b4a;
+  --citadel-gold: #a8842c;
+  --citadel-glass: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  --citadel-tone: var(--citadel-emerald);
   min-height: 100vh;
   padding-bottom: calc(2rem + env(safe-area-inset-bottom));
 }
@@ -224,14 +230,20 @@ select:focus-visible {
 }
 
 body.portfolio-page[data-theme="dark"] {
-  --color-bg: #12151c;
-  --color-surface: #1c2230;
-  --color-text: #f6f1e6;
-  --color-text-muted: #c5c8d0;
-  --color-border: #343b4d;
-  --color-primary: #ff6b61;
-  --color-accent: #ffd15c;
-  background: var(--color-bg);
+  --color-bg: #070b14;
+  --color-surface: #121a2b;
+  --color-text: #f4f7fb;
+  --color-text-muted: #b7c0d4;
+  --color-border: #2a3b5c;
+  --citadel-emerald: #3dffb0;
+  --citadel-amber: #ffc14d;
+  --citadel-crimson: #ff4d6a;
+  --citadel-gold: #f5d76e;
+  --citadel-glass: color-mix(in srgb, #0c1424 70%, transparent);
+  --portfolio-glass: var(--citadel-glass);
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--citadel-emerald) 16%, transparent), transparent 42%),
+    var(--color-bg);
   color: var(--color-text);
 }
 
@@ -361,6 +373,118 @@ body.portfolio-page[data-motion="reduce"] * {
   }
 }
 
+.citadel-shield {
+  width: 88px;
+  height: 104px;
+  transform-origin: center;
+}
+
+.citadel-shield-plate {
+  fill: color-mix(in srgb, var(--citadel-tone) 22%, transparent);
+  stroke: var(--citadel-tone);
+  stroke-width: 3;
+}
+
+.citadel-shield-crack {
+  fill: none;
+  stroke: var(--citadel-crimson);
+  stroke-width: 3;
+}
+
+.citadel-shield.is-emerald { --citadel-tone: var(--citadel-emerald); }
+.citadel-shield.is-amber { --citadel-tone: var(--citadel-amber); }
+.citadel-shield.is-crimson { --citadel-tone: var(--citadel-crimson); }
+.citadel-shield.is-gold { --citadel-tone: var(--citadel-gold); }
+.citadel-shield.is-neutral { --citadel-tone: var(--color-text-muted); }
+
+.quest-feedback {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 0.6rem 0.8rem;
+  align-items: center;
+}
+
+.quest-meter.is-emerald .quest-meter-fill { background: var(--citadel-emerald); }
+.quest-meter.is-amber .quest-meter-fill { background: var(--citadel-amber); }
+.quest-meter.is-crimson .quest-meter-fill { background: var(--citadel-crimson); }
+.quest-meter.is-gold .quest-meter-fill { background: var(--citadel-gold); }
+.quest-meter.is-neutral .quest-meter-fill { background: var(--color-text-muted); }
+
+.citadel-slider input[type="range"] {
+  accent-color: var(--citadel-emerald);
+}
+
+.citadel-slider.is-charging .quest-readout {
+  transform: scale(1.04);
+}
+
+.summon-agent {
+  grid-column: 1 / -1;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-weight: 800;
+  color: #071018;
+  background: linear-gradient(90deg, var(--citadel-gold), var(--citadel-emerald));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--citadel-emerald) 55%, transparent);
+}
+
+.card-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #000 55%, transparent);
+  padding: 1rem;
+}
+
+.protection-card {
+  width: min(100%, 320px);
+  padding: 1.2rem;
+  border-radius: var(--radius-xl);
+  background: var(--citadel-glass);
+  border: 1px solid var(--citadel-gold);
+  color: var(--color-text);
+  backdrop-filter: blur(16px);
+}
+
+.card-reveal.is-animated .protection-card {
+  animation: card-flip 0.7s ease;
+}
+
+.protection-rarity {
+  margin: 0;
+  font-weight: 800;
+  color: var(--citadel-gold);
+}
+
+.protection-card.is-ssr { border-color: var(--citadel-gold); }
+.protection-card.is-sr { border-color: var(--citadel-emerald); }
+.protection-card.is-r { border-color: var(--color-text-muted); }
+
+.citadel-radar {
+  color: var(--citadel-emerald);
+}
+
+@keyframes card-flip {
+  from { transform: rotateY(90deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-reveal.is-animated .protection-card,
+  .citadel-slider.is-charging .quest-readout,
+  .citadel-shield {
+    animation: none;
+    transform: none;
+  }
+}
+
 @media print {
   .portfolio-tools,
   #sample-btn,
@@ -373,5 +497,4 @@ body.portfolio-page[data-motion="reduce"] * {
     break-inside: avoid;
     backdrop-filter: none;
   }
-}
 }

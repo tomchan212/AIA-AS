@@ -9,7 +9,9 @@ import {
   provided,
   unknown,
   visibleSteps,
+  deriveDocumentRarity,
 } from "./domain/quest.js";
+import { citadelPresentation } from "./domain/citadel.js";
 
 const STAGE_COPY = {
   MEDICAL_SHIELD: ["stageMedical", "introMedical", "rewardMedical"],
@@ -89,27 +91,57 @@ export function createQuestController({ root, fortress, progress, getDraft, upda
     return { mode: "quick", stageId, stepIndex, steps, statuses };
   }
 
+  const revealed = new Set();
+
+  function shieldSvg(presentation, ratio) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 120 140");
+    svg.setAttribute("class", `citadel-shield is-${presentation.tone} is-${presentation.shield}`);
+    svg.setAttribute("aria-hidden", "true");
+    const plate = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    plate.setAttribute("d", "M60 8 L104 28 V68 C104 98 82 120 60 132 C38 120 16 98 16 68 V28 Z");
+    plate.setAttribute("class", "citadel-shield-plate");
+    svg.append(plate);
+    if (presentation.shield === "cracked") {
+      const crack = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      crack.setAttribute("d", "M60 30 L52 62 L70 70 L58 110");
+      crack.setAttribute("class", "citadel-shield-crack");
+      svg.append(crack);
+    }
+    const scale = presentation.shield === "idle" ? 0.92 : 0.92 + Math.min(ratio || 0, 1) * 0.08;
+    svg.style.transform = `scale(${scale})`;
+    return svg;
+  }
+
+  function summonLink() {
+    return h("a", { class: "summon-agent", href: "index.html" }, [t("summonAgent")]);
+  }
+
   function renderFeedback(stageId, host) {
     const profile = projectedProfile();
     const feedback = computeStageFeedback(stageId, answers(stageId), DEFAULT_GAP_BENCHMARKS, profile, QUEST_CONFIG);
+    const presentation = citadelPresentation(feedback, stageId);
     host.replaceChildren();
+    host.className = `quest-feedback is-${presentation.tone}`;
     const label = h("p", { class: "quest-feedback-text" });
-    if (feedback.band === "insufficient_data") {
+    if (feedback.band === "insufficient_data" && stageId !== "SAVINGS_TREASURY") {
       label.textContent = feedback.existingCents != null || feedback.recordedCents != null ? t("feedbackRecorded") : t("feedbackNeutral");
+    } else if (feedback.band === "insufficient_data") {
+      label.textContent = `${t(presentation.labelKey)}${feedback.recordedCents != null ? ` · ${formatMoney(feedback.recordedCents)}` : ""}`;
     } else {
       const percent = Math.round((feedback.coverageRatio || 0) * 100);
-      const band = feedback.band === "low" ? t("bandLow") : feedback.band === "moderate" ? t("bandModerate") : t("bandStrong");
-      label.textContent = `${band} · ${percent}%${feedback.coverageRatio > 1 ? ` (${t("overflow")})` : ""}${feedback.approximate ? ` · ${t("approximate")}` : ""}`;
+      label.textContent = `${t(presentation.labelKey)} · ${t("shieldHp")} ${percent}%${feedback.coverageRatio > 1 ? ` (${t("overflow")})` : ""}${feedback.approximate ? ` · ${t("approximate")}` : ""}`;
     }
-    const bar = h("div", { class: "quest-meter", "aria-hidden": "true" }, [
-      h("span", { class: feedback.band === "insufficient_data" ? "quest-meter-fill is-neutral" : "quest-meter-fill" }),
+    const bar = h("div", { class: `quest-meter is-${presentation.tone}`, "aria-hidden": "true" }, [
+      h("span", { class: "quest-meter-fill" }),
     ]);
     const fill = bar.querySelector("span");
     const width = feedback.band === "insufficient_data" ? 0 : Math.min(feedback.coverageRatio || 0, 1) * 100;
     requestAnimationFrame(() => {
       fill.style.transform = `scaleX(${width / 100})`;
     });
-    host.append(bar, label);
+    host.append(shieldSvg(presentation, feedback.coverageRatio), bar, label);
+    if (presentation.summon) host.append(summonLink());
   }
 
   function projectedProfile() {
@@ -146,7 +178,7 @@ export function createQuestController({ root, fortress, progress, getDraft, upda
     const config = sliderConfig(stageId, field);
     const current = answers(stageId)[field];
     const value = current?.kind === "provided" ? current.value : config.min;
-    const group = h("div", { class: "quest-field" });
+    const group = h("div", { class: "quest-field citadel-slider" });
     const slider = h("input", {
       type: "range",
       min: String(config.min),
@@ -166,6 +198,10 @@ export function createQuestController({ root, fortress, progress, getDraft, upda
       const cents = Number(slider.value);
       slider.setAttribute("aria-valuetext", formatMoney(cents));
       readout.textContent = formatMoney(cents);
+      group.classList.add("is-charging");
+      if (document.body.dataset.motion !== "reduce" && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        navigator.vibrate?.(8);
+      }
       setAnswer(stageId, field, provided(cents, "approximate"), { render: false });
       scheduleFeedback(stageId);
     });
@@ -178,7 +214,13 @@ export function createQuestController({ root, fortress, progress, getDraft, upda
       readout.textContent = formatMoney(cents);
       scheduleFeedback(stageId);
     });
-    group.append(h("span", {}, [t(field === "mpfCents" ? "tvc" : FIELD_COPY[field] || field)]), slider, readout, exact);
+    const labelKey = FIELD_COPY[field] || field;
+    const metaphor = field === "sumAssuredCents" || field === "annualLimitCents"
+      ? ` · ${t("shieldHp")}`
+      : field === "mpfCents" || field === "cashCents"
+        ? ` · ${t("citadelVault")}`
+        : "";
+    group.append(h("span", {}, [`${t(labelKey)}${metaphor}`]), slider, readout, exact);
     return group;
   }
 
@@ -234,6 +276,45 @@ export function createQuestController({ root, fortress, progress, getDraft, upda
     if (nextStage) go(nextStage, 0);
   }
 
+  function rarityFor(stageId) {
+    const fields = Object.values(answers(stageId))
+      .filter((answer) => answer?.kind === "provided")
+      .map((answer) => ({ required: true, confidence: answer.precision === "exact" ? 0.95 : 0.7 }));
+    return deriveDocumentRarity(fields.length ? fields : [{ required: true, confidence: 0.5 }], QUEST_CONFIG);
+  }
+
+  function openCardReveal(stageId) {
+    if (revealed.has(stageId)) return;
+    if (deriveRewardLevel(stageId, answers(stageId)) == null) return;
+    revealed.add(stageId);
+    const reduce = document.body.dataset.motion === "reduce" || matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const rarity = rarityFor(stageId);
+    const dialog = h("div", { class: reduce ? "card-reveal" : "card-reveal is-animated", role: "dialog", "aria-modal": "true", "aria-label": t("protectionCard") });
+    const panel = h("div", { class: `protection-card is-${rarity.toLowerCase()}` }, [
+      h("p", { class: "protection-rarity" }, [rarity]),
+      h("h3", {}, [t(STAGE_COPY[stageId][2])]),
+      h("p", {}, [t("rarityHint")]),
+      h("button", { type: "button", class: "portfolio-primary", id: "close-reveal" }, [t("next")]),
+    ]);
+    dialog.append(panel);
+    const close = () => dialog.remove();
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) close();
+    });
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      close();
+      document.removeEventListener("keydown", onKey);
+    };
+    document.addEventListener("keydown", onKey);
+    panel.querySelector("#close-reveal").addEventListener("click", () => {
+      document.removeEventListener("keydown", onKey);
+      close();
+    });
+    document.body.append(dialog);
+    panel.querySelector("#close-reveal").focus();
+  }
+
   function renderQuick(location) {
     const { stageId, stepIndex, steps } = location;
     const step = steps[stepIndex];
@@ -254,6 +335,7 @@ export function createQuestController({ root, fortress, progress, getDraft, upda
       card.append(h("button", { type: "button", class: "portfolio-primary", id: "quest-done" }, [t("next")]));
       root.append(card);
       card.querySelector("#quest-done").addEventListener("click", () => advance(stageId));
+      openCardReveal(stageId);
       return;
     }
     feedbackHost = h("div", { class: "quest-feedback", "aria-live": "polite" });

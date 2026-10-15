@@ -7,6 +7,7 @@ import { calculateProtectionGap } from "./domain/gap.js";
 import { emptyDraft, projectQuest, provided } from "./domain/quest.js";
 import { translate } from "./i18n.js";
 import { clearDraft, loadDraft, saveDraft } from "./storage/draft-store.js";
+import { anyCriticalGap } from "./domain/citadel.js";
 import { createQuestController } from "./quest-ui.js";
 
 let lang = localStorage.getItem("portfolio-lang") === "en" ? "en" : "zh-HK";
@@ -52,6 +53,7 @@ function radar(dimensions) {
   if (plotted.length < 3) return h("p", { class: "note" }, [t("insufficient")]);
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 280 280");
+  svg.setAttribute("class", "citadel-radar");
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", t("gapTitle"));
   const point = (index, ratio) => {
@@ -69,8 +71,9 @@ function radar(dimensions) {
   }
   const area = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
   area.setAttribute("points", plotted.map((row, index) => point(index, row.coverageRatio).join(",")).join(" "));
-  area.setAttribute("fill", "rgba(218,41,28,0.28)");
-  area.setAttribute("stroke", "#da291c");
+  area.setAttribute("fill", "currentColor");
+  area.setAttribute("fill-opacity", "0.28");
+  area.setAttribute("stroke", "currentColor");
   svg.append(area);
   return svg;
 }
@@ -92,10 +95,11 @@ function renderResults() {
   const gap = calculateProtectionGap({ client: projected.client, policies: projected.policies, benchmarks: DEFAULT_GAP_BENCHMARKS });
   body.append(
     h("p", { class: "disclaimer-banner" }, [`${tax.disclaimer} · ${tax.assessmentYear}`]),
-    h("p", {}, [`${t("claimed")}: ${money(tax.totalDeductionCents)}`]),
+    h("p", {}, [`${t("mana")}: ${money(tax.totalDeductionCents)}`]),
     tax.saving.kind === "estimated"
       ? h("p", {}, [`${t("saving")}: ${money(tax.saving.savingCents)}`])
       : h("p", { class: "note" }, [t("insufficient")]),
+    anyCriticalGap(gap.dimensions) ? h("a", { class: "summon-agent", href: "index.html" }, [t("summonAgent")]) : null,
     h("div", { class: "radar-wrap" }, [
       radar(gap.dimensions),
       h("table", { class: "gap-table" }, [
