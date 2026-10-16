@@ -6,6 +6,7 @@ import {
   estimateEmployeeMpf,
   incomeFromMonthly,
 } from "./calc.js";
+import { art } from "./art.js";
 
 const JOBS = ["文職", "IT", "零售", "飲食", "教育", "銷售", "醫療", "建造", "Freelance", "其他"];
 const app = document.getElementById("app");
@@ -219,13 +220,14 @@ function shell(inner) {
         const done = index + 1 < state.step;
         return `<li class="rounded-2xl px-1 py-2 text-center text-sm font-extrabold ${current ? "bg-clay text-white" : done ? "bg-white text-leaf" : "bg-white/70 text-ink/45"}">${label}</li>`;
       }).join("")}</ol>`;
-  app.innerHTML = `${tabBar()}${progress}<section class="rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
+  app.innerHTML = `${tabBar()}${progress}<section class="scene-in rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
   bindExplain(app);
   bindTabs();
 }
 
 function renderWelcome() {
   shell(`
+    ${art("guide")}
     <p class="text-base font-extrabold text-clay">未交過稅？冇事。</p>
     <h2 class="mt-1 text-3xl font-extrabold leading-tight">我一步步話你知，你大概要交幾多畀政府。</h2>
     <p class="mt-3">而家計緊 ${escapeHtml(TAX_YEAR.from.slice(0, 4))}年4月1日 至 ${escapeHtml(TAX_YEAR.to.slice(0, 4))}年3月31日。我當你單身，冇仔女，強積金自動扣。</p>
@@ -241,6 +243,7 @@ function renderWelcome() {
 
 function renderJob() {
   shell(`
+    ${art("guide")}
     <h2 class="text-3xl font-extrabold leading-tight">你做邊行㗎？</h2>
     <p class="mt-2">揀一個就得，純粹想親切啲。計稅唔會用到。</p>
     ${explainButton("job")}
@@ -273,9 +276,10 @@ function renderJob() {
 }
 
 function renderMode() {
-  const card = (mode, title, detail) => `
+  const card = (mode, picture, title, detail) => `
     <button type="button" data-mode="${mode}" class="rounded-3xl border-2 p-4 text-left ${state.mode === mode ? "border-clay bg-[#fff8f3]" : "border-line bg-paper"}">
-      <span class="block text-xl font-extrabold">${title}</span>
+      ${picture}
+      <span class="mt-2 block text-xl font-extrabold">${title}</span>
       <span class="mt-1 block text-base">${detail}</span>
     </button>`;
   shell(`
@@ -283,8 +287,8 @@ function renderMode() {
     <p class="mt-2">計緊 2026年4月1日 至 2027年3月31日入袋嘅錢。</p>
     ${explainButton("mode")}
     <div class="mt-4 grid gap-3">
-      ${card("monthly", "我每個月出糧", "話我知一個月幾多，同埋一年出幾多個月。")}
-      ${card("annual", "我知道全年總數", "直接打全包宴總共幾多錢。")}
+      ${card("monthly", art("wallet"), "我每個月出糧", "話我知一個月幾多，同埋一年出幾多個月。")}
+      ${card("annual", art("stack"), "我知道全年總數", "直接打全包宴總共幾多錢。")}
     </div>
     <div class="mt-5 grid grid-cols-2 gap-3">
       <button type="button" id="back" class="h-14 rounded-2xl border-2 border-line font-extrabold">返轉頭</button>
@@ -337,6 +341,7 @@ function renderAmount() {
       ${moneyField("bonus", "仲有冇一次過花紅或佣金？冇就留空。", state.bonus, "bonus", "0")}`
     : moneyField("annual", "全包宴總共賺咗幾多？", state.annual, "annual", "240000");
   shell(`
+    ${art("coins")}
     <h2 class="text-3xl font-extrabold leading-tight">${state.mode === "monthly" ? "每個月袋幾多？" : "全年總共袋幾多？"}</h2>
     <p class="mt-2">${escapeHtml(jobLabel())}，我哋計 2026年4月 至 2027年3月。</p>
     ${fields}
@@ -413,7 +418,7 @@ function bandBlock(bill) {
   const colors = ["#f3d7b0", "#e7b48a", "#d98a55", "#c4622d", "#8c3d22"];
   const total = slices.reduce((sum, slice) => sum + slice.amount, 0) || 1;
   return `
-    <div class="mt-3 flex h-4 overflow-hidden rounded-full">${slices.map((slice, index) => `<span style="width:${(slice.amount / total) * 100}%;background:${colors[index]}"></span>`).join("")}</div>
+    <div class="band-grow mt-3 flex h-4 overflow-hidden rounded-full">${slices.map((slice, index) => `<span style="width:${(slice.amount / total) * 100}%;background:${colors[index]}"></span>`).join("")}</div>
     <ul class="mt-3 space-y-2">
       ${slices.map((slice) => `<li class="flex items-start justify-between gap-3"><span>${escapeHtml(slice.plain)}</span><span class="font-extrabold">${money(slice.tax)}</span></li>`).join("")}
     </ul>
@@ -427,23 +432,27 @@ function renderResult() {
   const bill = calculateSalariesTax(income);
   const zero = bill.tax === 0;
   shell(`
+    ${zero ? art("calm") : art("receipt")}
     <p class="text-base font-extrabold text-clay">${escapeHtml(jobLabel())}，計好了。</p>
     <h2 class="mt-1 text-xl font-extrabold">${zero ? "你今年未使交稅。" : "你今年大約要交"}</h2>
-    <p class="mt-2 text-5xl font-extrabold tracking-tight ${zero ? "text-leaf" : ""}">${money(bill.tax)}</p>
+    <p class="mt-2 text-5xl font-extrabold tracking-tight ${zero ? "text-leaf" : ""}" data-count="${bill.tax}">${money(0)}</p>
     <p class="mt-2">${zero ? "扣完強積金都未過免稅額，政府呢年唔收你錢。" : "呢個係今年真正要交嘅稅，未計預繳下一年。"}</p>
     ${explainButton("tax")}
     <div class="mt-5 space-y-3 rounded-3xl bg-paper p-4">
       <div>
+        ${art("coins")}
         <p class="text-base text-ink/70">你一年總共賺咗</p>
         <p class="text-2xl font-extrabold">${money(bill.gross)}</p>
         ${explainButton("gross")}
       </div>
       <div>
+        ${art("piggy")}
         <p class="text-base text-ink/70">強積金已自動扣咗</p>
         <p class="text-2xl font-extrabold">− ${money(bill.mpf)}</p>
         ${explainButton("mpf")}
       </div>
       <div>
+        ${art("gate")}
         <p class="text-base text-ink/70">政府送畀你嘅免稅額</p>
         <p class="text-2xl font-extrabold">− ${money(bill.basicAllowance)}</p>
         <p class="text-base">賺唔夠呢條線，通常唔使交。舊年係 ${money(TAX_YEAR.rememberedAllowance)}，呢個稅年係 ${money(TAX_YEAR.basicAllowance)}。</p>
@@ -528,22 +537,23 @@ function renderTreasure() {
   const ready = baseIncome();
   app.innerHTML = `
     ${tabBar()}
-    <section class="mb-32 rounded-3xl bg-white p-5 shadow-card">
+    <section class="scene-in mb-32 rounded-3xl bg-white p-5 shadow-card">
       <p class="text-base font-extrabold text-clay">慳稅神隊友</p>
       <h2 class="mt-1 text-3xl font-extrabold leading-tight">扣稅三寶</h2>
       <p class="mt-2">買咗呢三樣，政府計稅時當你少賺咗，稅單就可以細啲。</p>
+      <div class="mt-4 flex justify-around">${art("shield")}${art("future")}${art("vault")}</div>
       <article class="mt-4 rounded-3xl bg-paper p-4">
-        <h3 class="text-xl font-extrabold">🛡️ 自願醫保</h3>
+        <div class="flex items-center gap-3">${art("shield")}<h3 class="text-xl font-extrabold">自願醫保</h3></div>
         <p class="mt-1">買個保障，睇私家醫院有得報銷。每個人每年最多當少賺 $8,000，仲可以幫屋企人買。</p>
         ${explainButton("vhis")}
       </article>
       <article class="mt-3 rounded-3xl bg-paper p-4">
-        <h3 class="text-xl font-extrabold">💰 合資格延期年金</h3>
+        <div class="flex items-center gap-3">${art("future")}<h3 class="text-xl font-extrabold">合資格延期年金</h3></div>
         <p class="mt-1">將今日嘅錢留畀將來嘅自己。供幾年，退休先每月拎。每年同 TVC 一齊，最多扣 $60,000。</p>
         ${explainButton("annuity")}
       </article>
       <article class="mt-3 rounded-3xl bg-paper p-4">
-        <h3 class="text-xl font-extrabold">🏦 TVC 額外強積金</h3>
+        <div class="flex items-center gap-3">${art("vault")}<h3 class="text-xl font-extrabold">TVC 額外強積金</h3></div>
         <p class="mt-1">平常 5% 強積金之外，再自己存多筆。同樣用緊上面嗰個 $60,000 額度。</p>
         ${explainButton("tvc")}
       </article>
@@ -653,30 +663,35 @@ function paintTreasureResult() {
   sticky.innerHTML = `
     <div class="savings-pop mx-auto flex max-w-lg items-center justify-between rounded-2xl bg-[#ffe8a3] px-4 py-3 shadow-card">
       <span class="text-lg font-extrabold">🎉 慳返</span>
-      <span class="text-3xl font-extrabold text-clay">${money(saved)}</span>
+      <span class="text-3xl font-extrabold text-clay" data-count="${saved}">${money(0)}</span>
     </div>`;
   host.innerHTML = `
     ${warnings.map((warning) => `<p class="mt-3 font-extrabold text-clay">${escapeHtml(warning)}</p>`).join("")}
     <p class="mt-3 text-base">年金計得 ${money(split.annuityAllowed)}，TVC 計得 ${money(split.tvcAllowed)}，自願醫保計得 ${money(split.vhisAllowed)}。</p>
-    <div class="mt-4 grid grid-cols-2 gap-3">
-      <div class="rounded-3xl bg-paper p-4">
-        <p class="text-base">原先要交</p>
+    <div class="mt-4 grid grid-cols-2 items-end gap-3">
+      <div>
+        <div class="jar" aria-hidden="true"><span style="--h:${before.tax ? "100%" : "8%"}"></span></div>
+        <p class="mt-2 text-base">原先要交</p>
         <p class="text-3xl font-extrabold line-through decoration-ink/30">${money(before.tax)}</p>
       </div>
-      <div class="rounded-3xl bg-paper p-4">
-        <p class="text-base">買咗三寶後</p>
+      <div>
+        <div class="jar after" aria-hidden="true"><span style="--h:${before.tax ? `${Math.max(8, Math.round((after.tax / before.tax) * 100))}%` : "8%"}"></span></div>
+        <p class="mt-2 text-base">買咗三寶後</p>
         <p class="text-3xl font-extrabold text-leaf">${money(after.tax)}</p>
       </div>
     </div>
-    <div class="savings-pop mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
+    <div class="savings-pop relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
+      ${saved > 0 ? `<div class="confetti">${Array.from({ length: 12 }, (_, index) => `<i style="--i:${index}"></i>`).join("")}</div>` : ""}
       <p class="text-xl font-extrabold">🎉 你總共慳返</p>
-      <p class="mt-1 text-5xl font-extrabold tracking-tight text-clay">${money(saved)}</p>
+      <p class="mt-1 text-5xl font-extrabold tracking-tight text-clay" data-count="${saved}">${money(0)}</p>
     </div>
     <p class="mt-4">${escapeHtml(story)}</p>
     ${movedBand ? `<p class="mt-2">扣完之後，最後嗰截稅率變咗：${escapeHtml(result.afterRate.plain)}所以唔係成筆都用同一個百分比乘。</p>` : ""}
     ${explainButton("treasure")}
   `;
   bindExplain(host);
+  animateCounts(sticky);
+  animateCounts(host);
 }
 
 function render() {
@@ -686,7 +701,27 @@ function render() {
   else if (state.step === 2) renderMode();
   else if (state.step === 3) renderAmount();
   else renderResult();
+  animateCounts(app);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function animateCounts(root) {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  root.querySelectorAll("[data-count]").forEach((node) => {
+    const target = Number(node.dataset.count) || 0;
+    if (reduce) {
+      node.textContent = money(target);
+      return;
+    }
+    const start = performance.now();
+    const tick = (now) => {
+      const progress = Math.min(1, (now - start) / 700);
+      const eased = 1 - (1 - progress) ** 3;
+      node.textContent = money(target * eased);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 }
 
 function openExplain(id) {

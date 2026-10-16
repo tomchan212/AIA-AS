@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#fff4e8">
   <title>計下要交幾多稅 · AIA</title>
   <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="tax/motion.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -32,15 +33,11 @@
     body { margin: 0; background: #fff4e8; color: #2a211c; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
     button, input { font: inherit; }
     input[type="range"] { accent-color: #c0562a; height: 2.75rem; }
-    @keyframes savings-pop {
-      0% { transform: scale(0.94); }
-      55% { transform: scale(1.04); }
-      100% { transform: scale(1); }
-    }
-    .savings-pop { animation: savings-pop 0.45s ease; }
   </style>
 </head>
 <body class="min-h-dvh bg-paper text-ink font-sans text-lg leading-relaxed">
+  <div class="blob blob-a" aria-hidden="true"></div>
+  <div class="blob blob-b" aria-hidden="true"></div>
   <header class="mx-auto flex w-full max-w-lg items-center justify-between px-4 pb-2 pt-5">
     <div>
       <p class="text-sm font-extrabold tracking-wide text-clay">AIA</p>
