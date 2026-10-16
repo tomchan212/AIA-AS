@@ -6,6 +6,8 @@ import {
   hongKongStamp,
   markdownPages,
   pageOf,
+  RETRY_MARKDOWN_COLUMNS,
+  retryReasonLabel,
   parseStatusCommand,
   replaceQueue,
   saveRecord,
@@ -56,10 +58,6 @@ function rowActions(number) {
     </div>`;
 }
 
-function reasonLabel(reason) {
-  return reason === "busy" ? "通左但忙緊" : "打左唔通";
-}
-
 function outcomeButtons(number) {
   return `
     <div class="outcome-row">
@@ -79,48 +77,79 @@ function pagerHtml(id, page, pageCount) {
     </div>`;
 }
 
-function renderNumberList(host, items, emptyText, withReason, pager) {
-  const visible = pager ? pageOf(items, pager.page).items : items;
-  const paged = pager ? pageOf(items, pager.page) : null;
-  if (pager) pager.setPage(paged.page);
-  const cards = visible.length
-    ? visible.map((item) => {
+function renderQueue() {
+  const host = document.getElementById("queue-list");
+  host.innerHTML = book.queue.length
+    ? book.queue.map((item) => {
         const dial = String(item.no).replace(/\s+/g, "");
-        const stamp = item.at ? `${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}` : "";
         return `
     <article class="number-card">
       <a class="dial-link" href="tel:+852${dial}">${escapeHtml(item.no)}</a>
-      ${withReason ? `<span class="reason-pill">${reasonLabel(item.reason)}${stamp ? ` · ${stamp}` : ""}</span>` : ""}
-      ${withReason ? rowActions(item.no) : `<button type="button" class="text-btn is-delete" data-delete="${escapeHtml(item.no)}">刪除</button>`}
+      <button type="button" class="text-btn is-delete" data-delete="${escapeHtml(item.no)}">刪除</button>
       ${outcomeButtons(item.no)}
     </article>`;
       }).join("")
-    : `<p class="leads-hint">${emptyText}</p>`;
-  host.innerHTML = (paged ? pagerHtml(pager.id, paged.page, paged.pageCount) : "") + cards;
-  if (!paged) return;
-  host.querySelector(`#${pager.id}-prev`)?.addEventListener("click", () => {
-    pager.setPage(paged.page - 1);
+    : `<p class="leads-hint">未有待電號碼。再生成會換一批，未打的不會儲存。</p>`;
+}
+
+function renderRecordPages(host, markdownHost, pages, page, setPage, pagerId, emptyText, rowHtml) {
+  if (page > pages.length) page = pages.length;
+  if (page < 1) page = 1;
+  setPage(page);
+  const current = pages[page - 1];
+  markdownHost.textContent = current.markdown;
+  const pager = pagerHtml(pagerId, current.page, current.pageCount);
+  host.innerHTML = current.rows.length ? pager + current.rows.map(rowHtml).join("") : `<p class="leads-hint">${emptyText}</p>${pager}`;
+  host.querySelector(`#${pagerId}-prev`)?.addEventListener("click", () => {
+    setPage(current.page - 1);
     render();
   });
-  host.querySelector(`#${pager.id}-next`)?.addEventListener("click", () => {
-    pager.setPage(paged.page + 1);
+  host.querySelector(`#${pagerId}-next`)?.addEventListener("click", () => {
+    setPage(current.page + 1);
     render();
   });
 }
 
+function renderRetry() {
+  renderRecordPages(
+    document.getElementById("retry-list"),
+    document.getElementById("retry-markdown"),
+    markdownPages(book.retry, undefined, RETRY_MARKDOWN_COLUMNS),
+    retryPage,
+    (page) => {
+      retryPage = page;
+    },
+    "retry",
+    "未有需要再打的號碼。",
+    (row) => {
+      const stamp = hongKongStamp(row.at);
+      const dial = String(row.no).replace(/\s+/g, "");
+      const note = row.remarks || "未填 remarks";
+      return `
+    <article class="record-row">
+      <div>
+        <a class="dial-link dial-link--small" href="tel:+852${escapeHtml(dial)}">${escapeHtml(row.no)}</a>
+        <p class="record-line">${escapeHtml(retryReasonLabel(row.reason))}</p>
+        <p class="stamp">${stamp.date} ${stamp.time} · ${escapeHtml(note)}</p>
+      </div>
+      <div class="row-actions">${rowActions(row.no)}</div>
+    </article>`;
+    }
+  );
+}
+
 function renderTalked() {
-  const host = document.getElementById("talked-table");
-  const markdown = document.getElementById("lead-markdown");
-  const pages = markdownPages(book.talked);
-  if (recordPage > pages.length) recordPage = pages.length;
-  if (recordPage < 1) recordPage = 1;
-  const current = pages[recordPage - 1];
-  markdown.textContent = current.markdown;
-  const pager = pagerHtml("record", current.page, current.pageCount);
-  if (!book.talked.length) {
-    host.innerHTML = `<p class="leads-hint">撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。</p>${pager}`;
-  } else {
-    const body = current.rows.map((row) => {
+  renderRecordPages(
+    document.getElementById("talked-table"),
+    document.getElementById("lead-markdown"),
+    markdownPages(book.talked),
+    recordPage,
+    (page) => {
+      recordPage = page;
+    },
+    "record",
+    "撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。",
+    (row) => {
       const stamp = hongKongStamp(row.at);
       const dial = String(row["no."]).replace(/\s+/g, "");
       const name = row.Name || "未填姓名";
@@ -134,17 +163,8 @@ function renderTalked() {
       </div>
       <div class="row-actions">${rowActions(row["no."])}</div>
     </article>`;
-    }).join("");
-    host.innerHTML = pager + body;
-  }
-  host.querySelector("#record-prev")?.addEventListener("click", () => {
-    recordPage -= 1;
-    render();
-  });
-  host.querySelector("#record-next")?.addEventListener("click", () => {
-    recordPage += 1;
-    render();
-  });
+    }
+  );
 }
 
 function render() {
@@ -152,25 +172,8 @@ function render() {
   document.getElementById("retry-count").textContent = String(book.retry.length);
   document.getElementById("talked-count").textContent = String(book.talked.length);
   document.getElementById("dead-count").textContent = String(book.unregistered.length);
-  renderNumberList(
-    document.getElementById("queue-list"),
-    book.queue,
-    "未有待電號碼。再生成會換一批，未打的不會儲存。",
-    false
-  );
-  renderNumberList(
-    document.getElementById("retry-list"),
-    book.retry,
-    "未有需要再打的號碼。",
-    true,
-    {
-      id: "retry",
-      page: retryPage,
-      setPage: (page) => {
-        retryPage = page;
-      },
-    }
-  );
+  renderQueue();
+  renderRetry();
   renderTalked();
   const dead = document.getElementById("unregistered-list");
   const deadPageData = pageOf(book.unregistered, deadPage);

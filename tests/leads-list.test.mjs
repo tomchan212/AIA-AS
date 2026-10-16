@@ -6,6 +6,7 @@ import {
   generateCallList,
   markdownPages,
   pageOf,
+  RETRY_MARKDOWN_COLUMNS,
   replaceQueue,
   saveRecord,
   deleteRecord,
@@ -47,6 +48,17 @@ test("a new generation replaces uncalled numbers and markdown is paged by Hong K
   assert.match(pages[0].markdown, /### 2026-10-16/);
   assert.match(pages[0].markdown, /#### 10:05/);
   assert.match(pages[1].markdown, /#### 09:41/);
+  const retryPages = markdownPages([
+    { no: "9123 4567", reason: "no_answer", remarks: "冇人聽", at: "2026-10-16T01:41:00.000Z" },
+    { no: "6123 4567", reason: "busy", remarks: "", at: "2026-10-16T02:05:00.000Z" },
+  ], 1, RETRY_MARKDOWN_COLUMNS);
+  assert.match(retryPages[0].markdown, /第 1 頁，共 2 頁/);
+  assert.match(retryPages[0].markdown, /### 2026-10-16/);
+  assert.match(retryPages[0].markdown, /#### 10:05/);
+  assert.match(retryPages[0].markdown, /\| no\. \| 結果 \| remarks \|/);
+  assert.match(retryPages[0].markdown, /6123 4567 \| 通左但忙緊 \|/);
+  assert.match(retryPages[1].markdown, /#### 09:41/);
+  assert.match(retryPages[1].markdown, /9123 4567 \| 打左唔通 \| 冇人聽/);
   const paged = pageOf(
     Array.from({ length: 9 }, (_, index) => ({ no: String(index), at: `2026-10-16T0${index}:00:00.000Z` })),
     2

@@ -164,13 +164,31 @@ export function hongKongStamp(iso) {
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
 }
 
-function markdownTable(rows) {
-  const header = "| Name | no. | status(accept/not) | remarks |";
-  const rule = "| --- | --- | --- | --- |";
-  const body = rows.map((row) => {
-    const remarks = String(row.remarks || "").replace(/\|/g, "／").replace(/\n/g, " ");
-    return `| ${row.Name} | ${row["no."]} | ${row["status(accept/not)"]} | ${remarks} |`;
-  });
+export function retryReasonLabel(reason) {
+  return reason === "busy" ? "通左但忙緊" : "打左唔通";
+}
+
+const TALKED_COLUMNS = [
+  ["Name", (row) => row.Name],
+  ["no.", (row) => row["no."]],
+  ["status(accept/not)", (row) => row["status(accept/not)"]],
+  ["remarks", (row) => row.remarks],
+];
+
+export const RETRY_MARKDOWN_COLUMNS = [
+  ["no.", (row) => row.no],
+  ["結果", (row) => retryReasonLabel(row.reason)],
+  ["remarks", (row) => row.remarks],
+];
+
+function markdownCell(value) {
+  return String(value || "").replace(/\|/g, "／").replace(/\n/g, " ");
+}
+
+function markdownTable(rows, columns) {
+  const header = `| ${columns.map(([name]) => name).join(" | ")} |`;
+  const rule = `| ${columns.map(() => "---").join(" | ")} |`;
+  const body = rows.map((row) => `| ${columns.map(([, read]) => markdownCell(read(row))).join(" | ")} |`);
   return [header, rule, ...body].join("\n");
 }
 
@@ -178,7 +196,7 @@ export function toMarkdownTable(rows) {
   return markdownPages(rows).map((page) => page.markdown).join("\n\n");
 }
 
-export function markdownPages(rows, pageSize = MARKDOWN_PAGE_SIZE) {
+export function markdownPages(rows, pageSize = MARKDOWN_PAGE_SIZE, columns = TALKED_COLUMNS) {
   const sorted = [...rows].sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
   const size = Math.max(1, pageSize);
   const pageCount = Math.max(1, Math.ceil(sorted.length / size));
@@ -197,10 +215,10 @@ export function markdownPages(rows, pageSize = MARKDOWN_PAGE_SIZE) {
         lastTime = "";
       }
       if (stamp.time !== lastTime) {
-        lines.push("", `#### ${stamp.time}`, "", markdownTable([row]));
+        lines.push("", `#### ${stamp.time}`, "", markdownTable([row], columns));
         lastTime = stamp.time;
       } else {
-        lines.push(`| ${row.Name} | ${row["no."]} | ${row["status(accept/not)"]} | ${String(row.remarks || "").replace(/\|/g, "／").replace(/\n/g, " ")} |`);
+        lines.push(`| ${columns.map(([, read]) => markdownCell(read(row))).join(" | ")} |`);
       }
     }
     pages.push({ page, pageCount, rows: slice, markdown: lines.join("\n").trim() });
