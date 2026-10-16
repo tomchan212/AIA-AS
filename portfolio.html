@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff7df">
+  <title>保單組合檢視 · AIA</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="portfolio.css">
+</head>
+<body class="portfolio-page">
+  <a class="skip-link" href="#quest-root">跳到任務</a>
+  <header class="portfolio-top">
+    <div>
+      <p class="portfolio-kicker brand-font" data-i18n="citadelTitle">香港城塞</p>
+      <h1 id="page-title" data-i18n="pageTitle">保單組合檢視</h1>
+      <p id="page-lead" data-i18n="pageLead">供持牌顧問使用的決策支援工具。結果不是受規管的理財、保險或稅務建議。</p>
+    </div>
+    <div class="portfolio-tools">
+      <a class="portfolio-tool" href="admin.html" data-i18n="back">返回後台</a>
+      <button type="button" class="portfolio-tool" id="lang-toggle">EN</button>
+      <button type="button" class="portfolio-tool" id="theme-toggle" aria-pressed="false">Dark</button>
+      <button type="button" class="portfolio-tool" id="motion-toggle" aria-pressed="false">Motion</button>
+    </div>
+  </header>
+
+  <main class="portfolio-main">
+    <section class="glass-card disclaimer-card" aria-labelledby="pics-title">
+      <h2 id="pics-title" data-i18n="picsTitle">收集個人資料說明</h2>
+      <p data-i18n="picsBody">此頁只在你的瀏覽器內計算，不會把收入、保單或姓名儲存到伺服器或本機。請只輸入完成檢視所需的資料，不要輸入身份證號碼。</p>
+      <p class="disclaimer-banner" data-i18n="disclaimer">估算 — 並非稅務或理財建議。請以保單文件及稅務局最新指引核對。</p>
+      <label class="consent-row">
+        <input type="checkbox" id="consent">
+        <span data-i18n="consent">我確認這是持牌顧問的決策支援，已向客戶說明用途，並且不會在此頁輸入身份證號碼。</span>
+      </label>
+    </section>
+
+    <p id="quest-progress" class="quest-progress"></p>
+    <div id="fortress" class="glass-card"></div>
+    <p id="storage-note" class="field-error" role="status"></p>
+    <div class="section-actions">
+      <button type="button" class="portfolio-tool" id="mode-toggle"></button>
+      <button type="button" class="portfolio-tool" id="sample-btn" data-i18n="sample">載入匿名示範</button>
+      <button type="button" class="portfolio-tool" id="clear-btn" data-i18n="clear">清除本頁資料</button>
+    </div>
+    <div id="quest-root"></div>
+
+    <section class="glass-card" id="results" aria-live="polite">
+      <div class="section-row">
+        <h2 data-i18n="resultsTitle">檢視結果</h2>
+        <button type="button" class="portfolio-tool" id="print-btn" data-i18n="print">列印／儲存報告</button>
+      </div>
+      <div id="results-body"></div>
+    </section>
+  </main>
+  <script type="module" src="portfolio/app.js"></script>
+</body>
+</html>

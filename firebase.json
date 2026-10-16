@@ -19,6 +19,8 @@
   ],
   "hosting": {
     "public": ".",
+    "cleanUrls": true,
+    "trailingSlash": false,
     "headers": [
       {
         "source": "**/*.html",

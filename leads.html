@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>冷電名單 · AIA</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="leads.css">
+</head>
+<body class="leads-page">
+  <header class="leads-top">
+    <div>
+      <p class="leads-kicker">AIA</p>
+      <h1>冷電名單</h1>
+    </div>
+    <a class="leads-link" href="admin.html">後台</a>
+  </header>
+  <nav class="section-nav" aria-label="清單">
+    <a href="#queue-section">待電 <span id="queue-count">0</span></a>
+    <a href="#retry-section">再打 <span id="retry-count">0</span></a>
+    <a href="#talked-section">記錄 <span id="talked-count">0</span></a>
+    <a href="#dead-section">無效 <span id="dead-count">0</span></a>
+  </nav>
+  <main class="leads-main">
+    <section class="leads-card">
+      <h2>生成待電</h2>
+      <p class="leads-label">字頭</p>
+      <div class="prefix-row" id="prefix-row">
+        <button type="button" class="prefix-btn" data-head="4" aria-pressed="false">4</button>
+        <button type="button" class="prefix-btn" data-head="5" aria-pressed="false">5</button>
+        <button type="button" class="prefix-btn" data-head="6" aria-pressed="true">6</button>
+        <button type="button" class="prefix-btn" data-head="7" aria-pressed="false">7</button>
+        <button type="button" class="prefix-btn" data-head="8" aria-pressed="false">8</button>
+        <button type="button" class="prefix-btn" data-head="9" aria-pressed="true">9</button>
+      </div>
+      <form id="generate-form" class="generate-form">
+        <label>開頭幾位
+          <input id="prefix-input" inputmode="numeric" maxlength="7" placeholder="例如 91，可留空" autocomplete="off">
+        </label>
+        <label>數量
+          <input id="lead-count" type="number" min="1" max="50" value="10">
+        </label>
+        <button type="submit" class="leads-primary">生成未打過的號碼</button>
+      </form>
+      <p id="command-msg" role="status"></p>
+    </section>
+
+    <section class="leads-card" id="queue-section">
+      <h2>待電</h2>
+      <div id="queue-list"></div>
+    </section>
+
+    <section class="leads-card" id="retry-section">
+      <h2>再打</h2>
+      <p class="leads-hint">打左唔通，或者通左但忙緊。改結果請撳修改。</p>
+      <div id="retry-list"></div>
+      <details class="markdown-fold">
+        <summary>Markdown 表格</summary>
+        <pre id="retry-markdown"></pre>
+      </details>
+    </section>
+
+    <section class="leads-card" id="talked-section">
+      <h2>通話記錄</h2>
+      <form id="command-form" class="generate-form">
+        <input id="command-input" type="text" placeholder="將張偉成的 status 改為 accept" autocomplete="off">
+        <button type="submit" class="leads-primary">更新狀態</button>
+      </form>
+      <div id="talked-table"></div>
+      <details class="markdown-fold">
+        <summary>Markdown 表格</summary>
+        <pre id="lead-markdown"></pre>
+      </details>
+    </section>
+
+    <section class="leads-card" id="dead-section">
+      <h2>無用戶登記</h2>
+      <div id="unregistered-list"></div>
+    </section>
+  </main>
+    <div id="delete-sheet" class="edit-sheet" hidden>
+      <div class="edit-card">
+        <h2>刪除這個號碼？</h2>
+        <p id="delete-number" class="dial-link"></p>
+        <button type="button" id="delete-confirm" class="leads-primary">確認刪除</button>
+        <button type="button" id="delete-cancel" class="edit-cancel">取消</button>
+      </div>
+    </div>
+    <div id="edit-sheet" class="edit-sheet" hidden>
+      <form id="edit-form" class="edit-card">
+        <h2 id="edit-title">記錄這通電話</h2>
+        <p id="edit-number" class="dial-link"></p>
+        <label>結果
+          <select id="edit-outcome">
+            <option value="no_answer">打左唔通</option>
+            <option value="busy">通左但忙緊</option>
+            <option value="unregistered">無用戶登記</option>
+            <option value="talked">已傾過</option>
+          </select>
+        </label>
+        <div id="edit-talked-fields">
+          <label>Name
+            <input id="edit-name" placeholder="打完先填姓名" autocomplete="name">
+          </label>
+          <label>status(accept/not)
+            <select id="edit-status">
+              <option>Pending</option>
+              <option>accept</option>
+              <option>not</option>
+            </select>
+          </label>
+        </div>
+        <label>remarks
+          <textarea id="edit-remarks" rows="3" placeholder="打完先填 remarks"></textarea>
+        </label>
+        <button type="submit" class="leads-primary">儲存並放入清單</button>
+        <button type="button" id="edit-cancel" class="edit-cancel">取消</button>
+      </form>
+    </div>
+  <script type="module" src="leads/app.js?v=delete-confirm"></script>
+</body>
+</html>
