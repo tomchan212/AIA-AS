@@ -6,7 +6,7 @@ import {
   estimateEmployeeMpf,
   incomeFromMonthly,
 } from "./calc.js";
-import { art } from "./art.js";
+import { JOB_ART, art } from "./art.js";
 
 const JOBS = ["文職", "IT", "零售", "飲食", "教育", "銷售", "醫療", "建造", "Freelance", "其他"];
 const app = document.getElementById("app");
@@ -243,11 +243,12 @@ function renderWelcome() {
 
 function renderJob() {
   shell(`
+    ${art("job")}
     <h2 class="text-3xl font-extrabold leading-tight">你做邊行㗎？</h2>
     <p class="mt-2">揀一個就得，純粹想親切啲。計稅唔會用到。</p>
     ${explainButton("job")}
     <div class="mt-4 grid grid-cols-2 gap-3">
-      ${JOBS.map((job) => `<button type="button" class="h-14 rounded-2xl border-2 text-lg font-extrabold ${state.job === job ? "border-clay bg-clay text-white" : "border-line bg-paper"}" data-job="${escapeHtml(job)}">${escapeHtml(job)}</button>`).join("")}
+      ${JOBS.map((job) => `<button type="button" class="flex h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 text-base font-extrabold ${state.job === job ? "border-clay bg-clay text-white" : "border-line bg-paper"}" data-job="${escapeHtml(job)}"><img class="job-icon" src="tax/art/${JOB_ART[job]}.png?v=4" alt="">${escapeHtml(job)}</button>`).join("")}
     </div>
     ${state.job === "其他" ? `<label class="mt-4 block font-extrabold">想寫得具體啲？<input id="job-other" class="mt-2 h-14 w-full rounded-2xl border-2 border-line bg-paper px-4 text-xl font-bold" maxlength="20" value="${escapeHtml(state.jobOther)}" placeholder="例如：設計師"></label>` : ""}
     <div class="mt-5 grid grid-cols-2 gap-3">
@@ -434,7 +435,7 @@ function renderResult() {
   const bill = calculateSalariesTax(income);
   const zero = bill.tax === 0;
   shell(`
-    ${zero ? art("calm") : ""}
+    ${zero ? art("calm") : art("receipt")}
     <p class="text-base font-extrabold text-clay">${escapeHtml(jobLabel())}，計好了。</p>
     <h2 class="mt-1 text-xl font-extrabold">${zero ? "你今年未使交稅。" : "你今年大約要交"}</h2>
     <p class="mt-2 text-5xl font-extrabold tracking-tight ${zero ? "text-leaf" : ""}" data-count="${bill.tax}">${money(0)}</p>
@@ -448,6 +449,7 @@ function renderResult() {
         ${explainButton("gross")}
       </div>
       <div>
+        ${art("piggy")}
         <p class="text-base text-ink/70">強積金已自動扣咗</p>
         <p class="text-2xl font-extrabold">− ${money(bill.mpf)}</p>
         ${explainButton("mpf")}
@@ -682,6 +684,7 @@ function paintTreasureResult() {
         <p class="text-3xl font-extrabold text-leaf">${money(after.tax)}</p>
       </div>
     </div>
+    ${saved > 0 ? art("savings") : ""}
     <div class="savings-pop relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
       ${saved > 0 ? `<div class="confetti">${Array.from({ length: 12 }, (_, index) => `<i style="--i:${index}"></i>`).join("")}</div>` : ""}
       <p class="text-xl font-extrabold">🎉 你總共慳返</p>
