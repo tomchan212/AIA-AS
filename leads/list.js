@@ -16,12 +16,17 @@ export function emptyBook() {
   return { queue: [], retry: [], talked: [], unregistered: [] };
 }
 
-export function knownNumbers(book) {
+export function calledNumbers(book) {
   const known = new Set();
-  for (const item of book.queue || []) known.add(digitsOnly(item.no));
   for (const item of book.retry || []) known.add(digitsOnly(item.no));
   for (const item of book.talked || []) known.add(digitsOnly(item["no."]));
   for (const item of book.unregistered || []) known.add(digitsOnly(item.no));
+  return known;
+}
+
+export function knownNumbers(book) {
+  const known = calledNumbers(book);
+  for (const item of book.queue || []) known.add(digitsOnly(item.no));
   return known;
 }
 
@@ -64,27 +69,27 @@ function withoutNumber(book, number) {
   };
 }
 
-export function classifyNumber(book, number, outcome) {
+export function classifyNumber(book, number, outcome, at = new Date().toISOString()) {
   if (!isHongKongMobile(number)) {
     return { ok: false, message: "請輸入 8 位香港流動電話，字頭要係 4、5、6、7、8 或 9。" };
   }
   const formatted = formatHongKongMobile(number);
   const next = withoutNumber(book, formatted);
   if (outcome === "no_answer" || outcome === "busy") {
-    next.retry = [...next.retry, { no: formatted, reason: outcome }];
+    next.retry = [...next.retry, { no: formatted, reason: outcome, at }];
   } else if (outcome === "unregistered") {
-    next.unregistered = [...next.unregistered, { no: formatted }];
+    next.unregistered = [...next.unregistered, { no: formatted, at }];
   } else if (outcome === "talked") {
-    next.talked = [...next.talked, { Name: "", "no.": formatted, "status(accept/not)": "Pending", remarks: "" }];
+    next.talked = [...next.talked, { Name: "", "no.": formatted, "status(accept/not)": "Pending", remarks: "", at }];
   } else {
     return { ok: false, message: "未知結果。" };
   }
   return { ok: true, book: next };
 }
 
-export function addToQueue(book, numbers) {
-  const known = knownNumbers(book);
-  const queue = [...(book.queue || [])];
+export function replaceQueue(book, numbers) {
+  const known = calledNumbers(book);
+  const queue = [];
   for (const number of numbers) {
     const digits = digitsOnly(number);
     if (!isHongKongMobile(digits) || known.has(digits)) continue;
@@ -94,7 +99,27 @@ export function addToQueue(book, numbers) {
   return { ...book, queue };
 }
 
-export function toMarkdownTable(rows) {
+export const MARKDOWN_PAGE_SIZE = 8;
+
+export function hongKongStamp(iso) {
+  const date = new Date(iso || Date.now());
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-HK", {
+      timeZone: "Asia/Hong_Kong",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value])
+  );
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
+}
+
+function markdownTable(rows) {
   const header = "| Name | no. | status(accept/not) | remarks |";
   const rule = "| --- | --- | --- | --- |";
   const body = rows.map((row) => {
@@ -102,6 +127,40 @@ export function toMarkdownTable(rows) {
     return `| ${row.Name} | ${row["no."]} | ${row["status(accept/not)"]} | ${remarks} |`;
   });
   return [header, rule, ...body].join("\n");
+}
+
+export function toMarkdownTable(rows) {
+  return markdownPages(rows).map((page) => page.markdown).join("\n\n");
+}
+
+export function markdownPages(rows, pageSize = MARKDOWN_PAGE_SIZE) {
+  const sorted = [...rows].sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+  const size = Math.max(1, pageSize);
+  const pageCount = Math.max(1, Math.ceil(sorted.length / size));
+  const pages = [];
+  for (let page = 1; page <= pageCount; page += 1) {
+    const slice = sorted.slice((page - 1) * size, page * size);
+    const lines = [`## 第 ${page} 頁，共 ${pageCount} 頁`];
+    let lastDate = "";
+    let lastTime = "";
+    if (!slice.length) lines.push("", "未有記錄。");
+    for (const row of slice) {
+      const stamp = hongKongStamp(row.at);
+      if (stamp.date !== lastDate) {
+        lines.push("", `### ${stamp.date}`);
+        lastDate = stamp.date;
+        lastTime = "";
+      }
+      if (stamp.time !== lastTime) {
+        lines.push("", `#### ${stamp.time}`, "", markdownTable([row]));
+        lastTime = stamp.time;
+      } else {
+        lines.push(`| ${row.Name} | ${row["no."]} | ${row["status(accept/not)"]} | ${String(row.remarks || "").replace(/\|/g, "／").replace(/\n/g, " ")} |`);
+      }
+    }
+    pages.push({ page, pageCount, rows: slice, markdown: lines.join("\n").trim() });
+  }
+  return pages;
 }
 
 export function updateLeadStatus(rows, target, status) {

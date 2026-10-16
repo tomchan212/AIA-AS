@@ -1,22 +1,24 @@
 import {
-  addToQueue,
+  calledNumbers,
   classifyNumber,
   emptyBook,
   generateCallList,
-  knownNumbers,
+  hongKongStamp,
+  markdownPages,
   parseStatusCommand,
-  toMarkdownTable,
+  replaceQueue,
   updateLeadStatus,
 } from "./list.js";
 
 const STORAGE_KEY = "aia-cold-call-book";
 const message = document.getElementById("command-msg");
 let book = loadBook();
+let recordPage = 1;
 
 function loadBook() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "");
-    if (saved && Array.isArray(saved.queue) && Array.isArray(saved.talked)) return { ...emptyBook(), ...saved };
+    if (saved && Array.isArray(saved.talked)) return { ...emptyBook(), ...saved, queue: [] };
   } catch {
     /* keep a fresh book */
   }
@@ -24,7 +26,8 @@ function loadBook() {
 }
 
 function saveBook() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(book));
+  const saved = { ...book, queue: [] };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
 }
 
 function escapeHtml(value) {
@@ -63,7 +66,7 @@ function renderNumberList(host, items, emptyText, withReason) {
     return `
     <article class="number-card">
       <a class="dial-link" href="tel:+852${dial}">${escapeHtml(item.no)}</a>
-      ${withReason ? `<span class="reason-pill">${reasonLabel(item.reason)}</span>` : ""}
+      ${withReason ? `<span class="reason-pill">${reasonLabel(item.reason)} · ${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</span>` : ""}
       ${outcomeButtons(item.no)}
     </article>`;
   }).join("");
@@ -72,13 +75,26 @@ function renderNumberList(host, items, emptyText, withReason) {
 function renderTalked() {
   const host = document.getElementById("talked-table");
   const markdown = document.getElementById("lead-markdown");
-  markdown.textContent = book.talked.length ? toMarkdownTable(book.talked) : "未有傾過的記錄。";
+  const pages = markdownPages(book.talked);
+  if (recordPage > pages.length) recordPage = pages.length;
+  if (recordPage < 1) recordPage = 1;
+  const current = pages[recordPage - 1];
+  markdown.textContent = current.markdown;
+  const pager = `
+    <div class="page-row">
+      <button type="button" id="page-prev" ${recordPage <= 1 ? "disabled" : ""}>上一頁</button>
+      <span>第 ${current.page} 頁，共 ${current.pageCount} 頁</span>
+      <button type="button" id="page-next" ${recordPage >= current.pageCount ? "disabled" : ""}>下一頁</button>
+    </div>`;
   if (!book.talked.length) {
-    host.innerHTML = `<p class="leads-hint">撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。</p>`;
-    return;
-  }
-  const body = book.talked.map((row, index) => `
+    host.innerHTML = `<p class="leads-hint">撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。</p>${pager}`;
+  } else {
+    const body = current.rows.map((row) => {
+      const index = book.talked.indexOf(row);
+      const stamp = hongKongStamp(row.at);
+      return `
     <article class="talked-card">
+      <p class="stamp">${stamp.date} ${stamp.time}</p>
       <a class="dial-link" href="tel:+852${escapeHtml(String(row["no."]).replace(/\s+/g, ""))}">${escapeHtml(row["no."])}</a>
       <label>Name
         <input data-field="Name" data-index="${index}" value="${escapeHtml(row.Name)}" placeholder="打完先填姓名" autocomplete="name">
@@ -91,8 +107,18 @@ function renderTalked() {
       <label>remarks
         <input data-field="remarks" data-index="${index}" value="${escapeHtml(row.remarks)}" placeholder="打完先填 remarks">
       </label>
-    </article>`).join("");
-  host.innerHTML = body;
+    </article>`;
+    }).join("");
+    host.innerHTML = pager + body;
+  }
+  host.querySelector("#page-prev")?.addEventListener("click", () => {
+    recordPage -= 1;
+    render();
+  });
+  host.querySelector("#page-next")?.addEventListener("click", () => {
+    recordPage += 1;
+    render();
+  });
   host.querySelectorAll("select").forEach((select) => {
     select.addEventListener("change", () => {
       const index = Number(select.dataset.index);
@@ -118,12 +144,12 @@ function render() {
   document.getElementById("retry-count").textContent = String(book.retry.length);
   document.getElementById("talked-count").textContent = String(book.talked.length);
   document.getElementById("dead-count").textContent = String(book.unregistered.length);
-  renderNumberList(document.getElementById("queue-list"), book.queue, "未有待電號碼。", false);
+  renderNumberList(document.getElementById("queue-list"), book.queue, "未有待電號碼。再生成會換一批，未打的不會儲存。", false);
   renderNumberList(document.getElementById("retry-list"), book.retry, "未有需要再打的號碼。", true);
   renderTalked();
   const dead = document.getElementById("unregistered-list");
   dead.innerHTML = book.unregistered.length
-    ? book.unregistered.map((item) => `<p class="dead-number">${escapeHtml(item.no)}</p>`).join("")
+    ? book.unregistered.map((item) => `<p class="dead-number">${escapeHtml(item.no)}<span>${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</span></p>`).join("")
     : `<p class="leads-hint">未有無用戶登記的號碼。</p>`;
   document.querySelectorAll("[data-outcome]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -153,15 +179,15 @@ document.getElementById("generate-form").addEventListener("submit", (event) => {
     heads: selectedHeads(),
     prefix: document.getElementById("prefix-input").value,
     count: document.getElementById("lead-count").value,
-    known: knownNumbers(book),
+    known: calledNumbers(book),
   });
   if (!created.ok) {
     message.textContent = created.message;
     return;
   }
-  book = addToQueue(book, created.numbers);
+  book = replaceQueue(book, created.numbers);
   saveBook();
-  message.textContent = `已加入 ${created.numbers.length} 個未打過的號碼。`;
+  message.textContent = `已換上 ${created.numbers.length} 個新號碼。未打過的不會儲存。`;
   render();
 });
 

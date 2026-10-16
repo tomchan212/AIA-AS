@@ -1,12 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  addToQueue,
   classifyNumber,
   emptyBook,
   generateCallList,
-  knownNumbers,
-  toMarkdownTable,
+  markdownPages,
+  replaceQueue,
   updateLeadStatus,
 } from "../leads/list.js";
 
@@ -28,28 +27,23 @@ test("generated numbers use the selected prefix and skip numbers already kept", 
   assert.equal(generateCallList({ heads: ["2"], count: 1 }).ok, false);
 });
 
-test("no-answer and busy can be redialled, while unregistered numbers stay out", () => {
-  let book = addToQueue(emptyBook(), ["9123 4567", "6123 4567"]);
-  book = classifyNumber(book, "9123 4567", "no_answer").book;
-  book = classifyNumber(book, "6123 4567", "unregistered").book;
-  assert.equal(book.queue.length, 0);
-  assert.equal(book.retry[0].reason, "no_answer");
-  assert.equal(book.unregistered[0].no, "6123 4567");
-  const again = generateCallList({
-    heads: ["9", "6"],
-    count: 5,
-    known: knownNumbers(book),
-    random: () => 0,
-  });
-  const generated = (again.numbers || []).map((number) => number.replace(/\s/g, ""));
-  assert.equal(generated.includes("91234567"), false);
-  assert.equal(generated.includes("61234567"), false);
-  book = classifyNumber(book, "9123 4567", "talked").book;
-  assert.equal(book.retry.length, 0);
-  assert.equal(book.talked[0].Name, "");
-  assert.equal(book.talked[0].remarks, "");
-  assert.equal(book.talked[0]["status(accept/not)"], "Pending");
+test("a new generation replaces uncalled numbers and markdown is paged by Hong Kong time", () => {
+  let book = replaceQueue(emptyBook(), ["9123 4567"]);
+  book = replaceQueue(book, ["6123 4567"]);
+  assert.deepEqual(book.queue.map((item) => item.no), ["6123 4567"]);
+  book = classifyNumber(book, "6123 4567", "unregistered", "2026-10-16T01:41:00.000Z").book;
+  book = classifyNumber(book, "9123 4567", "talked", "2026-10-16T01:41:00.000Z").book;
+  book = replaceQueue(book, ["6123 4567", "5123 4567"]);
+  assert.equal(book.queue.some((item) => item.no.includes("6123")), false);
+  const pages = markdownPages([
+    ...book.talked,
+    { Name: "二", "no.": "5123 0002", "status(accept/not)": "Pending", remarks: "", at: "2026-10-16T02:05:00.000Z" },
+  ], 1);
+  assert.equal(pages.length, 2);
+  assert.match(pages[0].markdown, /第 1 頁，共 2 頁/);
+  assert.match(pages[0].markdown, /### 2026-10-16/);
+  assert.match(pages[0].markdown, /#### 10:05/);
+  assert.match(pages[1].markdown, /#### 09:41/);
   const updated = updateLeadStatus(book.talked, "91234567", "accept");
   assert.equal(updated.rows[0]["status(accept/not)"], "accept");
-  assert.match(toMarkdownTable(updated.rows), /\| Name \| no\. \| status\(accept\/not\) \| remarks \|/);
 });
