@@ -13,35 +13,59 @@
     <div>
       <p class="leads-kicker">AIA</p>
       <h1>冷電名單</h1>
-      <p>打陌生電話之前唔知對方姓名。打完之後，先由你自己填姓名同 remarks。新增時只記錄你打過的號碼，不會自動編名。</p>
+      <p>先生成未打過的號碼。打完先按結果分類。姓名同 remarks 只在傾過之後由你自己填。</p>
     </div>
     <a class="leads-link" href="admin.html">返回後台</a>
   </header>
   <main class="leads-main">
     <section class="leads-card">
-      <h2>新增這通電話</h2>
-      <form id="add-form">
-        <label>你打過的號碼
-          <input id="lead-number" type="tel" inputmode="numeric" placeholder="9123 4567" autocomplete="off">
+      <h2>生成待電</h2>
+      <p class="leads-label">字頭</p>
+      <div class="prefix-row" id="prefix-row">
+        <button type="button" class="prefix-btn" data-head="4" aria-pressed="false">4</button>
+        <button type="button" class="prefix-btn" data-head="5" aria-pressed="false">5</button>
+        <button type="button" class="prefix-btn" data-head="6" aria-pressed="true">6</button>
+        <button type="button" class="prefix-btn" data-head="7" aria-pressed="false">7</button>
+        <button type="button" class="prefix-btn" data-head="8" aria-pressed="false">8</button>
+        <button type="button" class="prefix-btn" data-head="9" aria-pressed="true">9</button>
+      </div>
+      <form id="generate-form" class="generate-form">
+        <label>開頭幾位
+          <input id="prefix-input" inputmode="numeric" maxlength="7" placeholder="例如 91，可留空" autocomplete="off">
         </label>
-        <button type="submit" class="leads-primary">新增</button>
-      </form>
-    </section>
-    <section class="leads-card">
-      <h2>更新狀態</h2>
-      <form id="command-form">
-        <input id="command-input" type="text" placeholder="將張偉成的 status 改為 accept" autocomplete="off">
-        <button type="submit" class="leads-primary">更新</button>
+        <label>數量
+          <input id="lead-count" type="number" min="1" max="50" value="10">
+        </label>
+        <button type="submit" class="leads-primary">生成未打過的號碼</button>
       </form>
       <p id="command-msg" role="status"></p>
     </section>
+
     <section class="leads-card">
-      <h2>名單</h2>
-      <div id="lead-table"></div>
+      <h2>待電</h2>
+      <div id="queue-list"></div>
     </section>
+
     <section class="leads-card">
-      <h2>Markdown</h2>
+      <h2>再打</h2>
+      <p class="leads-hint">打左唔通，或者通左但忙緊。</p>
+      <div id="retry-list"></div>
+    </section>
+
+    <section class="leads-card">
+      <h2>通話記錄</h2>
+      <form id="command-form" class="generate-form">
+        <input id="command-input" type="text" placeholder="將張偉成的 status 改為 accept" autocomplete="off">
+        <button type="submit" class="leads-primary">更新狀態</button>
+      </form>
+      <div id="talked-table"></div>
+      <h3>Markdown</h3>
       <pre id="lead-markdown"></pre>
+    </section>
+
+    <section class="leads-card">
+      <h2>無用戶登記</h2>
+      <div id="unregistered-list"></div>
     </section>
   </main>
   <script type="module" src="leads/app.js"></script>

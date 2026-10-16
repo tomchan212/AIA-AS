@@ -1,24 +1,55 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { blankLead, isHongKongMobile, parseStatusCommand, toMarkdownTable, updateLeadStatus } from "../leads/list.js";
+import {
+  addToQueue,
+  classifyNumber,
+  emptyBook,
+  generateCallList,
+  knownNumbers,
+  toMarkdownTable,
+  updateLeadStatus,
+} from "../leads/list.js";
 
-test("a new call row keeps the dialled number and leaves name and remarks blank", () => {
-  const created = blankLead("91234567");
+test("generated numbers use the selected prefix and skip numbers already kept", () => {
+  const known = new Set(["91230000"]);
+  let n = 0;
+  const random = () => {
+    n += 1;
+    return (n % 10) / 10;
+  };
+  const created = generateCallList({ heads: ["9"], prefix: "91", count: 3, known, random });
   assert.equal(created.ok, true);
-  assert.equal(created.row.Name, "");
-  assert.equal(created.row["no."], "9123 4567");
-  assert.equal(created.row["status(accept/not)"], "Pending");
-  assert.equal(created.row.remarks, "");
-  assert.equal(blankLead("21234567").ok, false);
-  assert.equal(isHongKongMobile("3123 4567"), false);
-  assert.match(toMarkdownTable([created.row]), /\| Name \| no\. \| status\(accept\/not\) \| remarks \|/);
+  assert.equal(created.numbers.length, 3);
+  for (const number of created.numbers) {
+    const digits = number.replace(/\s/g, "");
+    assert.match(digits, /^91\d{6}$/);
+    assert.equal(known.has(digits), false);
+  }
+  assert.equal(generateCallList({ heads: ["2"], count: 1 }).ok, false);
 });
 
-test("status update rewrites the matching row", () => {
-  const rows = [{ Name: "張偉成", "no.": "9123 4567", "status(accept/not)": "Pending", remarks: "聽日再打" }];
-  const updated = updateLeadStatus(rows, "張偉成", "accept");
-  assert.equal(updated.ok, true);
+test("no-answer and busy can be redialled, while unregistered numbers stay out", () => {
+  let book = addToQueue(emptyBook(), ["9123 4567", "6123 4567"]);
+  book = classifyNumber(book, "9123 4567", "no_answer").book;
+  book = classifyNumber(book, "6123 4567", "unregistered").book;
+  assert.equal(book.queue.length, 0);
+  assert.equal(book.retry[0].reason, "no_answer");
+  assert.equal(book.unregistered[0].no, "6123 4567");
+  const again = generateCallList({
+    heads: ["9", "6"],
+    count: 5,
+    known: knownNumbers(book),
+    random: () => 0,
+  });
+  const generated = (again.numbers || []).map((number) => number.replace(/\s/g, ""));
+  assert.equal(generated.includes("91234567"), false);
+  assert.equal(generated.includes("61234567"), false);
+  book = classifyNumber(book, "9123 4567", "talked").book;
+  assert.equal(book.retry.length, 0);
+  assert.equal(book.talked[0].Name, "");
+  assert.equal(book.talked[0].remarks, "");
+  assert.equal(book.talked[0]["status(accept/not)"], "Pending");
+  const updated = updateLeadStatus(book.talked, "91234567", "accept");
   assert.equal(updated.rows[0]["status(accept/not)"], "accept");
-  const command = parseStatusCommand("將張偉成的 status 改為 not");
-  assert.deepEqual(command, { target: "張偉成", status: "not" });
+  assert.match(toMarkdownTable(updated.rows), /\| Name \| no\. \| status\(accept\/not\) \| remarks \|/);
 });
