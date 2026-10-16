@@ -206,9 +206,8 @@ function jobLabel() {
   return state.job || "你";
 }
 
-function explainButton(id, hint = "") {
-  const label = hint ? `💡 咩黎架？${hint}` : "💡 咩黎架？（詳細白話文解釋）";
-  return `<button type="button" class="mt-2 block text-left text-base font-extrabold text-clay underline decoration-2 underline-offset-4" data-explain="${id}">${label}</button>`;
+function explainButton(id) {
+  return `<button type="button" class="explain-btn" data-explain="${id}">💡 咩黎架？</button>`;
 }
 
 function shell(inner) {
@@ -707,7 +706,6 @@ function render() {
   else if (state.step === 3) renderAmount();
   else renderResult();
   animateCounts(app);
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function animateCounts(root) {
@@ -742,16 +740,14 @@ function openExplain(id) {
     body.appendChild(p);
   }
   explain.hidden = false;
-  explain.classList.remove("hidden");
-  explain.classList.add("flex");
-  document.getElementById("explain-close").focus();
+  explain.classList.add("is-open");
+  document.getElementById("explain-close").focus({ preventScroll: true });
 }
 
 function closeExplain() {
   state.explainId = "";
   explain.hidden = true;
-  explain.classList.add("hidden");
-  explain.classList.remove("flex");
+  explain.classList.remove("is-open");
 }
 
 document.getElementById("explain-close").addEventListener("click", closeExplain);
