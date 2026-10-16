@@ -213,19 +213,38 @@ function render() {
     button.addEventListener("click", () => openEditor(existingRecord(button.dataset.edit)));
   });
   document.querySelectorAll("[data-delete]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const result = deleteRecord(book, button.dataset.delete);
-      if (!result.ok) {
-        message.textContent = result.message;
-        return;
-      }
-      book = result.book;
-      saveBook();
-      message.textContent = "已刪除。";
-      render();
-    });
+    button.addEventListener("click", () => openDeleteConfirm(button.dataset.delete));
   });
 }
+
+function openDeleteConfirm(number) {
+  document.getElementById("delete-number").textContent = number;
+  document.getElementById("delete-number").dataset.number = number;
+  document.getElementById("delete-sheet").hidden = false;
+  document.getElementById("delete-confirm").focus();
+}
+
+function closeDeleteConfirm() {
+  document.getElementById("delete-sheet").hidden = true;
+}
+
+document.getElementById("delete-cancel").addEventListener("click", closeDeleteConfirm);
+document.getElementById("delete-sheet").addEventListener("click", (event) => {
+  if (event.target.id === "delete-sheet") closeDeleteConfirm();
+});
+document.getElementById("delete-confirm").addEventListener("click", () => {
+  const result = deleteRecord(book, document.getElementById("delete-number").dataset.number);
+  if (!result.ok) {
+    message.textContent = result.message;
+    closeDeleteConfirm();
+    return;
+  }
+  book = result.book;
+  saveBook();
+  closeDeleteConfirm();
+  message.textContent = "已刪除。";
+  render();
+});
 
 function digits(value) {
   return String(value || "").replace(/\s+/g, "");
