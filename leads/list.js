@@ -101,6 +101,18 @@ export function replaceQueue(book, numbers) {
 
 export const MARKDOWN_PAGE_SIZE = 8;
 
+export function pageOf(items, page = 1, pageSize = MARKDOWN_PAGE_SIZE) {
+  const sorted = [...items].sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+  const size = Math.max(1, pageSize);
+  const pageCount = Math.max(1, Math.ceil(sorted.length / size));
+  const current = Math.min(Math.max(1, page), pageCount);
+  return {
+    page: current,
+    pageCount,
+    items: sorted.slice((current - 1) * size, current * size),
+  };
+}
+
 export function hongKongStamp(iso) {
   const date = new Date(iso || Date.now());
   const parts = Object.fromEntries(

@@ -5,6 +5,7 @@ import {
   emptyBook,
   generateCallList,
   markdownPages,
+  pageOf,
   replaceQueue,
   updateLeadStatus,
 } from "../leads/list.js";
@@ -44,6 +45,12 @@ test("a new generation replaces uncalled numbers and markdown is paged by Hong K
   assert.match(pages[0].markdown, /### 2026-10-16/);
   assert.match(pages[0].markdown, /#### 10:05/);
   assert.match(pages[1].markdown, /#### 09:41/);
+  const paged = pageOf(
+    Array.from({ length: 9 }, (_, index) => ({ no: String(index), at: `2026-10-16T0${index}:00:00.000Z` })),
+    2
+  );
+  assert.equal(paged.pageCount, 2);
+  assert.equal(paged.items.length, 1);
   const updated = updateLeadStatus(book.talked, "91234567", "accept");
   assert.equal(updated.rows[0]["status(accept/not)"], "accept");
 });
