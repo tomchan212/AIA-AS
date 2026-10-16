@@ -124,6 +124,14 @@ export function replaceQueue(book, numbers) {
   return { ...book, queue };
 }
 
+export function deleteRecord(book, number) {
+  const before = (book.queue || []).length + (book.retry || []).length + (book.talked || []).length + (book.unregistered || []).length;
+  const next = withoutNumber(book, number);
+  const after = next.queue.length + next.retry.length + next.talked.length + next.unregistered.length;
+  if (after === before) return { ok: false, message: "找不到這筆記錄。" };
+  return { ok: true, book: next };
+}
+
 export const MARKDOWN_PAGE_SIZE = 8;
 
 export function pageOf(items, page = 1, pageSize = MARKDOWN_PAGE_SIZE) {

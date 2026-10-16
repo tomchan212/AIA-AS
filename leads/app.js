@@ -9,6 +9,7 @@ import {
   parseStatusCommand,
   replaceQueue,
   saveRecord,
+  deleteRecord,
   updateLeadStatus,
 } from "./list.js";
 
@@ -46,6 +47,15 @@ function selectedHeads() {
   return [...document.querySelectorAll(".prefix-btn[aria-pressed='true']")].map((button) => button.dataset.head);
 }
 
+function rowActions(number) {
+  const safe = escapeHtml(number);
+  return `
+    <div class="row-actions">
+      <button type="button" class="text-btn" data-edit="${safe}">修改</button>
+      <button type="button" class="text-btn is-delete" data-delete="${safe}">刪除</button>
+    </div>`;
+}
+
 function reasonLabel(reason) {
   return reason === "busy" ? "通左但忙緊" : "打左唔通";
 }
@@ -81,7 +91,7 @@ function renderNumberList(host, items, emptyText, withReason, pager) {
     <article class="number-card">
       <a class="dial-link" href="tel:+852${dial}">${escapeHtml(item.no)}</a>
       ${withReason ? `<span class="reason-pill">${reasonLabel(item.reason)}${stamp ? ` · ${stamp}` : ""}</span>` : ""}
-      <button type="button" class="edit-btn" data-edit="${escapeHtml(item.no)}">修改</button>
+      ${withReason ? rowActions(item.no) : `<button type="button" class="text-btn is-delete" data-delete="${escapeHtml(item.no)}">刪除</button>`}
       ${outcomeButtons(item.no)}
     </article>`;
       }).join("")
@@ -122,7 +132,7 @@ function renderTalked() {
         <p class="record-line">${escapeHtml(name)} · ${escapeHtml(row["status(accept/not)"])}</p>
         <p class="stamp">${stamp.date} ${stamp.time} · ${escapeHtml(note)}</p>
       </div>
-      <button type="button" class="edit-btn" data-edit="${escapeHtml(row["no."])}">修改</button>
+      <div class="row-actions">${rowActions(row["no."])}</div>
     </article>`;
     }).join("");
     host.innerHTML = pager + body;
@@ -167,7 +177,7 @@ function render() {
   deadPage = deadPageData.page;
   const deadCards = deadPageData.items.length
     ? deadPageData.items
-        .map((item) => `<p class="dead-number"><span>${escapeHtml(item.no)}</span><span>${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</span><button type="button" class="edit-btn" data-edit="${escapeHtml(item.no)}">修改</button></p>`)
+        .map((item) => `<article class="record-row"><div><a class="dial-link" href="tel:+852${escapeHtml(String(item.no).replace(/\s+/g, ""))}">${escapeHtml(item.no)}</a><p class="stamp">${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</p></div>${rowActions(item.no)}</article>`)
         .join("")
     : `<p class="leads-hint">未有無用戶登記的號碼。</p>`;
   dead.innerHTML = pagerHtml("dead", deadPageData.page, deadPageData.pageCount) + deadCards;
@@ -198,6 +208,19 @@ function render() {
   });
   document.querySelectorAll("[data-edit]").forEach((button) => {
     button.addEventListener("click", () => openEditor(existingRecord(button.dataset.edit)));
+  });
+  document.querySelectorAll("[data-delete]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const result = deleteRecord(book, button.dataset.delete);
+      if (!result.ok) {
+        message.textContent = result.message;
+        return;
+      }
+      book = result.book;
+      saveBook();
+      message.textContent = "已刪除。";
+      render();
+    });
   });
 }
 

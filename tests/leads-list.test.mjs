@@ -8,6 +8,7 @@ import {
   pageOf,
   replaceQueue,
   saveRecord,
+  deleteRecord,
   updateLeadStatus,
 } from "../leads/list.js";
 
@@ -64,4 +65,7 @@ test("a new generation replaces uncalled numbers and markdown is paged by Hong K
   });
   assert.equal(edited.book.talked[0].Name, "陳大文");
   assert.equal(edited.book.retry.length, 0);
+  const removed = deleteRecord(edited.book, "9123 4567");
+  assert.equal(removed.ok, true);
+  assert.equal(removed.book.talked.length, 0);
 });

@@ -3,7 +3,17 @@
   background: #fff7df;
   color: #21130d;
   font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
   padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+
+.leads-page button,
+.leads-page input,
+.leads-page select,
+.leads-page textarea {
+  font: inherit;
+  font-weight: 700;
 }
 
 .leads-top,
@@ -26,9 +36,17 @@
   margin: 0;
 }
 
+.leads-top h1,
+.leads-card h2,
+.edit-card h2 {
+  margin: 0 0 0.7rem;
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
 .leads-top h1 {
-  font-size: 1.45rem;
-  line-height: 1.15;
+  margin: 0;
 }
 
 .leads-kicker,
@@ -49,24 +67,18 @@
   background: #fff7df;
 }
 
-.section-nav a {
-  min-height: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #fff;
-  color: #21130d;
-  text-decoration: none;
-  font-size: 0.78rem;
-  font-weight: 800;
-  border: 1px solid #eadfbe;
-}
-
-.section-nav span {
-  color: #da291c;
-  font-size: 0.95rem;
+.section-nav a,
+.section-nav span,
+.leads-label,
+.leads-hint,
+.reason-pill,
+.stamp,
+.record-line,
+.page-row span,
+.markdown-fold summary,
+pre {
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .leads-main {
@@ -83,9 +95,21 @@
   box-shadow: 0 8px 20px rgba(120, 60, 0, 0.05);
 }
 
-.leads-card h2 {
-  margin: 0 0 0.7rem;
-  font-size: 1.05rem;
+.section-nav a {
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #fff;
+  color: #21130d;
+  text-decoration: none;
+  border: 1px solid #eadfbe;
+}
+
+.section-nav span {
+  color: #da291c;
 }
 
 .leads-label {
@@ -136,9 +160,12 @@ select {
   box-sizing: border-box;
 }
 
-.prefix-btn {
+.prefix-btn,
+.outcome-btn,
+.text-btn,
+.leads-primary {
+  font-size: 1rem;
   font-weight: 800;
-  font-size: 1.05rem;
 }
 
 .prefix-btn[aria-pressed="true"] {
@@ -163,13 +190,14 @@ select {
   border-top: 1px solid #f0e6c8;
 }
 
-.dial-link {
+.dial-link,
+.dial-link--small {
   color: #1a2744;
-  font-size: 1.7rem;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-decoration: none;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .reason-pill {
@@ -177,9 +205,7 @@ select {
   background: #fff4cf;
   color: #8a5a00;
   border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.82rem;
-  font-weight: 800;
+  padding: 0.25rem 0.7rem;
 }
 
 .outcome-row {
@@ -190,7 +216,6 @@ select {
 
 .outcome-btn {
   font-weight: 800;
-  font-size: 0.92rem;
 }
 
 .outcome-btn.is-miss,
@@ -208,9 +233,10 @@ select {
   border-color: transparent;
 }
 
-.talked-card label {
-  font-size: 0.82rem;
-  font-weight: 800;
+.talked-card label,
+.edit-card label {
+  font-size: 1rem;
+  font-weight: 700;
   color: #6b7280;
 }
 
@@ -233,16 +259,14 @@ select {
 }
 
 .markdown-fold summary {
-  min-height: 44px;
+  min-height: 48px;
   display: flex;
   align-items: center;
-  font-weight: 800;
 }
 
 pre {
   white-space: pre-wrap;
   margin: 0.4rem 0 0;
-  font-size: 0.78rem;
 }
 
 .page-row {
@@ -254,11 +278,7 @@ pre {
 }
 
 .page-row button {
-  min-height: 44px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  font-weight: 800;
+  min-height: 48px;
 }
 
 .page-row button:disabled {
@@ -266,38 +286,10 @@ pre {
 }
 
 .page-row span,
-.stamp {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #6b7280;
-  margin: 0;
-}
-
-.record-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-top: 1px solid #f0e6c8;
-}
-
-.record-line,
-.stamp {
+.stamp,
+.record-line {
   margin: 0.15rem 0 0;
-}
-
-.dial-link--small {
-  font-size: 1.2rem;
-}
-
-.edit-btn {
-  min-height: 44px;
-  min-width: 72px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  font-weight: 800;
+  color: #6b7280;
 }
 
 .edit-sheet {
@@ -328,12 +320,35 @@ pre {
   margin: 0;
 }
 
-.edit-cancel {
+.record-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: 1px solid #f0e6c8;
+}
+
+.row-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  min-width: 148px;
+}
+
+.text-btn,
+.edit-cancel,
+.page-row button {
   min-height: 48px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   background: #fff;
+  color: #21130d;
   font-weight: 800;
+}
+
+.text-btn.is-delete {
+  color: #da291c;
 }
 
 .dead-number {
@@ -344,6 +359,5 @@ pre {
 }
 
 .dead-number span {
-  font-size: 0.82rem;
   color: #6b7280;
 }
