@@ -87,6 +87,31 @@ export function classifyNumber(book, number, outcome, at = new Date().toISOStrin
   return { ok: true, book: next };
 }
 
+export function saveRecord(book, { number, outcome, name = "", status = "Pending", remarks = "", at }) {
+  if (!isHongKongMobile(number)) {
+    return { ok: false, message: "請輸入 8 位香港流動電話，字頭要係 4、5、6、7、8 或 9。" };
+  }
+  const formatted = formatHongKongMobile(number);
+  const stamp = at || new Date().toISOString();
+  const next = withoutNumber(book, formatted);
+  if (outcome === "no_answer" || outcome === "busy") {
+    next.retry = [...next.retry, { no: formatted, reason: outcome, remarks, at: stamp }];
+  } else if (outcome === "unregistered") {
+    next.unregistered = [...next.unregistered, { no: formatted, remarks, at: stamp }];
+  } else if (outcome === "talked") {
+    if (!["accept", "not", "Pending"].includes(status)) {
+      return { ok: false, message: "status 只可以是 accept、not 或 Pending。" };
+    }
+    next.talked = [
+      ...next.talked,
+      { Name: name, "no.": formatted, "status(accept/not)": status, remarks, at: stamp },
+    ];
+  } else {
+    return { ok: false, message: "未知結果。" };
+  }
+  return { ok: true, book: next };
+}
+
 export function replaceQueue(book, numbers) {
   const known = calledNumbers(book);
   const queue = [];

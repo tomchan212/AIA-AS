@@ -75,6 +75,37 @@
       <div id="unregistered-list"></div>
     </section>
   </main>
+    <div id="edit-sheet" class="edit-sheet" hidden>
+      <form id="edit-form" class="edit-card">
+        <h2 id="edit-title">記錄這通電話</h2>
+        <p id="edit-number" class="dial-link"></p>
+        <label>結果
+          <select id="edit-outcome">
+            <option value="no_answer">打左唔通</option>
+            <option value="busy">通左但忙緊</option>
+            <option value="unregistered">無用戶登記</option>
+            <option value="talked">已傾過</option>
+          </select>
+        </label>
+        <div id="edit-talked-fields">
+          <label>Name
+            <input id="edit-name" placeholder="打完先填姓名" autocomplete="name">
+          </label>
+          <label>status(accept/not)
+            <select id="edit-status">
+              <option>Pending</option>
+              <option>accept</option>
+              <option>not</option>
+            </select>
+          </label>
+        </div>
+        <label>remarks
+          <textarea id="edit-remarks" rows="3" placeholder="打完先填 remarks"></textarea>
+        </label>
+        <button type="submit" class="leads-primary">儲存並放入清單</button>
+        <button type="button" id="edit-cancel" class="edit-cancel">取消</button>
+      </form>
+    </div>
   <script type="module" src="leads/app.js"></script>
 </body>
 </html>

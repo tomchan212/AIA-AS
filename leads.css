@@ -273,11 +273,74 @@ pre {
   margin: 0;
 }
 
-.dead-number {
+.record-row {
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
-  align-items: baseline;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: 1px solid #f0e6c8;
+}
+
+.record-line,
+.stamp {
+  margin: 0.15rem 0 0;
+}
+
+.dial-link--small {
+  font-size: 1.2rem;
+}
+
+.edit-btn {
+  min-height: 44px;
+  min-width: 72px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 800;
+}
+
+.edit-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  align-items: end;
+  padding: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  background: rgba(26, 39, 68, 0.45);
+}
+
+.edit-sheet[hidden] {
+  display: none;
+}
+
+.edit-card {
+  display: grid;
+  gap: 0.55rem;
+  background: #fff;
+  border-radius: 20px 20px 16px 16px;
+  padding: 1rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.edit-card h2 {
+  margin: 0;
+}
+
+.edit-cancel {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 800;
+}
+
+.dead-number {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
 }
 
 .dead-number span {

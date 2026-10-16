@@ -8,6 +8,7 @@ import {
   pageOf,
   parseStatusCommand,
   replaceQueue,
+  saveRecord,
   updateLeadStatus,
 } from "./list.js";
 
@@ -80,6 +81,7 @@ function renderNumberList(host, items, emptyText, withReason, pager) {
     <article class="number-card">
       <a class="dial-link" href="tel:+852${dial}">${escapeHtml(item.no)}</a>
       ${withReason ? `<span class="reason-pill">${reasonLabel(item.reason)}${stamp ? ` · ${stamp}` : ""}</span>` : ""}
+      <button type="button" class="edit-btn" data-edit="${escapeHtml(item.no)}">修改</button>
       ${outcomeButtons(item.no)}
     </article>`;
       }).join("")
@@ -109,23 +111,18 @@ function renderTalked() {
     host.innerHTML = `<p class="leads-hint">撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。</p>${pager}`;
   } else {
     const body = current.rows.map((row) => {
-      const index = book.talked.indexOf(row);
       const stamp = hongKongStamp(row.at);
+      const dial = String(row["no."]).replace(/\s+/g, "");
+      const name = row.Name || "未填姓名";
+      const note = row.remarks || "未填 remarks";
       return `
-    <article class="talked-card">
-      <p class="stamp">${stamp.date} ${stamp.time}</p>
-      <a class="dial-link" href="tel:+852${escapeHtml(String(row["no."]).replace(/\s+/g, ""))}">${escapeHtml(row["no."])}</a>
-      <label>Name
-        <input data-field="Name" data-index="${index}" value="${escapeHtml(row.Name)}" placeholder="打完先填姓名" autocomplete="name">
-      </label>
-      <label>status(accept/not)
-        <select data-index="${index}">
-          ${["Pending", "accept", "not"].map((status) => `<option ${row["status(accept/not)"] === status ? "selected" : ""}>${status}</option>`).join("")}
-        </select>
-      </label>
-      <label>remarks
-        <input data-field="remarks" data-index="${index}" value="${escapeHtml(row.remarks)}" placeholder="打完先填 remarks">
-      </label>
+    <article class="record-row">
+      <div>
+        <a class="dial-link dial-link--small" href="tel:+852${escapeHtml(dial)}">${escapeHtml(row["no."])}</a>
+        <p class="record-line">${escapeHtml(name)} · ${escapeHtml(row["status(accept/not)"])}</p>
+        <p class="stamp">${stamp.date} ${stamp.time} · ${escapeHtml(note)}</p>
+      </div>
+      <button type="button" class="edit-btn" data-edit="${escapeHtml(row["no."])}">修改</button>
     </article>`;
     }).join("");
     host.innerHTML = pager + body;
@@ -137,24 +134,6 @@ function renderTalked() {
   host.querySelector("#record-next")?.addEventListener("click", () => {
     recordPage += 1;
     render();
-  });
-  host.querySelectorAll("select").forEach((select) => {
-    select.addEventListener("change", () => {
-      const index = Number(select.dataset.index);
-      const result = updateLeadStatus(book.talked, book.talked[index]["no."], select.value);
-      if (!result.ok) return;
-      book.talked = result.rows;
-      saveBook();
-      render();
-    });
-  });
-  host.querySelectorAll("input").forEach((input) => {
-    input.addEventListener("change", () => {
-      const index = Number(input.dataset.index);
-      book.talked[index][input.dataset.field] = input.value.trim();
-      saveBook();
-      render();
-    });
   });
 }
 
@@ -188,7 +167,7 @@ function render() {
   deadPage = deadPageData.page;
   const deadCards = deadPageData.items.length
     ? deadPageData.items
-        .map((item) => `<p class="dead-number">${escapeHtml(item.no)}<span>${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</span></p>`)
+        .map((item) => `<p class="dead-number"><span>${escapeHtml(item.no)}</span><span>${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</span><button type="button" class="edit-btn" data-edit="${escapeHtml(item.no)}">修改</button></p>`)
         .join("")
     : `<p class="leads-hint">未有無用戶登記的號碼。</p>`;
   dead.innerHTML = pagerHtml("dead", deadPageData.page, deadPageData.pageCount) + deadCards;
@@ -202,6 +181,10 @@ function render() {
   });
   document.querySelectorAll("[data-outcome]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.outcome === "talked") {
+        openEditor({ number: button.dataset.number, outcome: "talked", isNew: true });
+        return;
+      }
       const result = classifyNumber(book, button.dataset.number, button.dataset.outcome);
       if (!result.ok) {
         message.textContent = result.message;
@@ -213,7 +196,84 @@ function render() {
       render();
     });
   });
+  document.querySelectorAll("[data-edit]").forEach((button) => {
+    button.addEventListener("click", () => openEditor(existingRecord(button.dataset.edit)));
+  });
 }
+
+function digits(value) {
+  return String(value || "").replace(/\s+/g, "");
+}
+
+function existingRecord(number) {
+  const needle = digits(number);
+  const retry = book.retry.find((item) => digits(item.no) === needle);
+  if (retry) return { number: retry.no, outcome: retry.reason, remarks: retry.remarks || "", at: retry.at };
+  const dead = book.unregistered.find((item) => digits(item.no) === needle);
+  if (dead) return { number: dead.no, outcome: "unregistered", remarks: dead.remarks || "", at: dead.at };
+  const talked = book.talked.find((item) => digits(item["no."]) === needle);
+  if (talked) {
+    return {
+      number: talked["no."],
+      outcome: "talked",
+      name: talked.Name,
+      status: talked["status(accept/not)"],
+      remarks: talked.remarks,
+      at: talked.at,
+    };
+  }
+  return { number, outcome: "talked", isNew: true };
+}
+
+function syncTalkedFields() {
+  document.getElementById("edit-talked-fields").hidden = document.getElementById("edit-outcome").value !== "talked";
+}
+
+function openEditor(record) {
+  document.getElementById("edit-number").textContent = record.number;
+  document.getElementById("edit-number").dataset.number = record.number;
+  document.getElementById("edit-number").dataset.at = record.isNew ? "" : record.at || "";
+  document.getElementById("edit-outcome").value = record.outcome || "talked";
+  document.getElementById("edit-name").value = record.name || "";
+  document.getElementById("edit-status").value = record.status || "Pending";
+  document.getElementById("edit-remarks").value = record.remarks || "";
+  document.getElementById("edit-title").textContent = record.isNew ? "記錄這通電話" : "修改記錄";
+  syncTalkedFields();
+  document.getElementById("edit-sheet").hidden = false;
+  document.getElementById("edit-name").focus();
+}
+
+function closeEditor() {
+  document.getElementById("edit-sheet").hidden = true;
+}
+
+document.getElementById("edit-outcome").addEventListener("change", syncTalkedFields);
+document.getElementById("edit-cancel").addEventListener("click", closeEditor);
+document.getElementById("edit-sheet").addEventListener("click", (event) => {
+  if (event.target.id === "edit-sheet") closeEditor();
+});
+document.getElementById("edit-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const number = document.getElementById("edit-number").dataset.number;
+  const at = document.getElementById("edit-number").dataset.at;
+  const result = saveRecord(book, {
+    number,
+    outcome: document.getElementById("edit-outcome").value,
+    name: document.getElementById("edit-name").value.trim(),
+    status: document.getElementById("edit-status").value,
+    remarks: document.getElementById("edit-remarks").value.trim(),
+    at: at || undefined,
+  });
+  if (!result.ok) {
+    message.textContent = result.message;
+    return;
+  }
+  book = result.book;
+  saveBook();
+  closeEditor();
+  message.textContent = "已儲存。";
+  render();
+});
 
 document.getElementById("prefix-row").addEventListener("click", (event) => {
   const button = event.target.closest(".prefix-btn");

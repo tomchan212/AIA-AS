@@ -7,6 +7,7 @@ import {
   markdownPages,
   pageOf,
   replaceQueue,
+  saveRecord,
   updateLeadStatus,
 } from "../leads/list.js";
 
@@ -53,4 +54,14 @@ test("a new generation replaces uncalled numbers and markdown is paged by Hong K
   assert.equal(paged.items.length, 1);
   const updated = updateLeadStatus(book.talked, "91234567", "accept");
   assert.equal(updated.rows[0]["status(accept/not)"], "accept");
+  const edited = saveRecord(book, {
+    number: "9123 4567",
+    outcome: "talked",
+    name: "陳大文",
+    status: "not",
+    remarks: "聽日再聯絡",
+    at: book.talked[0].at,
+  });
+  assert.equal(edited.book.talked[0].Name, "陳大文");
+  assert.equal(edited.book.retry.length, 0);
 });
