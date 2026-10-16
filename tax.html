@@ -31,6 +31,13 @@
   <style>
     body { margin: 0; background: #fff4e8; color: #2a211c; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
     button, input { font: inherit; }
+    input[type="range"] { accent-color: #c0562a; height: 2.75rem; }
+    @keyframes savings-pop {
+      0% { transform: scale(0.94); }
+      55% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    .savings-pop { animation: savings-pop 0.45s ease; }
   </style>
 </head>
 <body class="min-h-dvh bg-paper text-ink font-sans text-lg leading-relaxed">

@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import {
   TAX_YEAR,
   calculateSalariesTax,
+  compareTreasure,
   estimateAnnualMpf,
   estimateEmployeeMpf,
   incomeFromMonthly,
+  marginalRate,
 } from "../tax/calc.js";
 
 test("2026/27 basic allowance matches the IRD example", () => {
@@ -51,6 +53,28 @@ test("income under the allowance pays nothing", () => {
   assert.equal(bill.tax, 0);
   assert.equal(bill.totalDemand, 0);
   assert.equal(bill.allowanceUsed, 95_000);
+});
+
+test("annuity, VHIS and TVC reduce tax inside the official caps", () => {
+  const base = { gross: 240_000, mpf: 12_000 };
+  assert.equal(marginalRate(calculateSalariesTax(base)).percent, 6);
+  const sameBand = compareTreasure(base, { annuity: 10_000 });
+  assert.equal(sameBand.after.tax, 2_380);
+  assert.equal(sameBand.saved, 600);
+  const dropped = compareTreasure(base, { annuity: 60_000 });
+  assert.equal(dropped.after.chargeable, 23_000);
+  assert.equal(dropped.after.tax, 460);
+  assert.equal(dropped.saved, 2_520);
+  const shared = compareTreasure(base, { annuity: 40_000, tvc: 40_000, vhis: 20_000, vhisPeople: 1 });
+  assert.equal(shared.split.tvcAllowed, 40_000);
+  assert.equal(shared.split.annuityAllowed, 20_000);
+  assert.equal(shared.split.sharedExcess, 20_000);
+  assert.equal(shared.split.vhisAllowed, 8_000);
+  assert.equal(shared.split.allowed, 68_000);
+  const family = compareTreasure(base, { vhis: 20_000, vhisPeople: 3 });
+  assert.equal(family.split.vhisAllowed, 20_000);
+  const alreadyFree = compareTreasure({ gross: 100_000, mpf: 5_000 }, { annuity: 60_000 });
+  assert.equal(alreadyFree.saved, 0);
 });
 
 test("very high income uses the cheaper two-tier standard rate", () => {

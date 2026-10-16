@@ -87,10 +87,17 @@ export function standardTax(netIncome) {
   return { tax: firstTax + restTax, first, rest, firstTax, restTax };
 }
 
-export function calculateSalariesTax({ gross, mpf = 0, basicAllowance = TAX_YEAR.basicAllowance } = {}) {
+export const TREASURE_CAPS = {
+  vhisPerPerson: 8_000,
+  annuityTvcCombined: 60_000,
+};
+
+export function calculateSalariesTax({ gross, mpf = 0, extraDeduction = 0, basicAllowance = TAX_YEAR.basicAllowance } = {}) {
   const income = Math.max(0, roundDollar(gross));
-  const deduction = Math.min(income, Math.max(0, roundDollar(mpf)));
-  const netIncome = income - deduction;
+  const mpfDeduction = Math.min(income, Math.max(0, roundDollar(mpf)));
+  const extra = Math.min(Math.max(0, income - mpfDeduction), Math.max(0, roundDollar(extraDeduction)));
+  const deduction = mpfDeduction;
+  const netIncome = income - mpfDeduction - extra;
   const allowance = Math.max(0, roundDollar(basicAllowance));
   const allowanceUsed = Math.min(netIncome, allowance);
   const chargeable = netIncome - allowanceUsed;
@@ -104,6 +111,7 @@ export function calculateSalariesTax({ gross, mpf = 0, basicAllowance = TAX_YEAR
     year: TAX_YEAR.id,
     gross: income,
     mpf: deduction,
+    extraDeduction: extra,
     netIncome,
     basicAllowance: allowance,
     allowanceUsed,
@@ -118,6 +126,65 @@ export function calculateSalariesTax({ gross, mpf = 0, basicAllowance = TAX_YEAR
     secondInstalment: provisionalSecond,
     firstDue: "2028年1月左右",
     secondDue: "2028年4月左右",
+  };
+}
+
+export function marginalRate(bill) {
+  if (!bill || bill.chargeable <= 0 || bill.tax <= 0) {
+    return { bps: 0, percent: 0, plain: "你未使交稅，所以而家冇下一截稅率。" };
+  }
+  if (bill.method === "standard") {
+    const percent = bill.standard.rest > 0 ? 16 : 15;
+    return { bps: percent * 100, percent, plain: `你賺得比較多，最後嗰截用一刀切 ${percent}%。` };
+  }
+  const last = bill.progressive.slices.filter((slice) => slice.amount > 0).at(-1);
+  const percent = last.bps / 100;
+  return { bps: last.bps, percent, plain: `你最後嗰截係 ${percent}%（${last.plain}）。` };
+}
+
+export function splitTreasure({ annuity = 0, vhis = 0, tvc = 0, vhisPeople = 1 } = {}) {
+  const people = Math.min(9, Math.max(1, roundDollar(vhisPeople) || 1));
+  const vhisPaid = Math.max(0, roundDollar(vhis));
+  const tvcPaid = Math.max(0, roundDollar(tvc));
+  const annuityPaid = Math.max(0, roundDollar(annuity));
+  const vhisCap = TREASURE_CAPS.vhisPerPerson * people;
+  const vhisAllowed = Math.min(vhisPaid, vhisCap);
+  const tvcAllowed = Math.min(tvcPaid, TREASURE_CAPS.annuityTvcCombined);
+  const annuityAllowed = Math.min(annuityPaid, TREASURE_CAPS.annuityTvcCombined - tvcAllowed);
+  const sharedAllowed = tvcAllowed + annuityAllowed;
+  return {
+    people,
+    vhisPaid,
+    vhisCap,
+    vhisAllowed,
+    vhisExcess: vhisPaid - vhisAllowed,
+    tvcPaid,
+    tvcAllowed,
+    annuityPaid,
+    annuityAllowed,
+    annuityExcess: annuityPaid - annuityAllowed,
+    sharedCap: TREASURE_CAPS.annuityTvcCombined,
+    sharedAllowed,
+    sharedExcess: tvcPaid + annuityPaid - sharedAllowed,
+    allowed: vhisAllowed + sharedAllowed,
+  };
+}
+
+export function compareTreasure(base, treasure) {
+  const before = calculateSalariesTax(base);
+  const split = splitTreasure(treasure);
+  const after = calculateSalariesTax({ ...base, extraDeduction: split.allowed });
+  const spent = split.vhisPaid + split.annuityPaid + split.tvcPaid;
+  const saved = before.tax - after.tax;
+  return {
+    before,
+    after,
+    split,
+    spent,
+    saved,
+    netCost: Math.max(0, spent - saved),
+    beforeRate: marginalRate(before),
+    afterRate: marginalRate(after),
   };
 }
 

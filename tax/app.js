@@ -1,6 +1,7 @@
 import {
   TAX_YEAR,
   calculateSalariesTax,
+  compareTreasure,
   estimateAnnualMpf,
   estimateEmployeeMpf,
   incomeFromMonthly,
@@ -21,6 +22,11 @@ const state = {
   annual: "",
   error: "",
   explainId: "",
+  tab: "tax",
+  annuity: 0,
+  vhis: 0,
+  tvc: 0,
+  vhisPeople: 1,
 };
 
 const EXPLAIN = {
@@ -134,7 +140,7 @@ const EXPLAIN = {
     title: "最後要交幾多？",
     paragraphs: [
       "呢個係你 2026/27 呢個稅年，大約真正要交嘅稅。",
-      "我當你單身，未計供養爸媽、仔女、自願醫保或者年金。如果你有呢啲，真實稅單可能更少。",
+      "我當你單身，未計供養爸媽同仔女。想試下自願醫保、年金或者額外強積金，去第二頁「扣稅三寶」。",
       "政府舊一個稅年（2025/26）有一次過減稅，最多減 $3,000。呢個稅年未有公布同一樣嘅減稅，所以呢度冇減。",
       "真正幾多，以稅務局張單為準。",
     ],
@@ -146,6 +152,38 @@ const EXPLAIN = {
       "張單多數分兩期。第一期大約 2028年1月：交今年真正要交嘅稅，再加下一年預繳嘅 75%。第二期大約 2028年4月：交剩低 25% 預繳。",
       "預繳即係政府叫你先交明年大概咁多，等你明年唔使一次過拿一大筆出嚟。稅單上面可能寫「暫繳稅」，意思就係預繳。",
       "如果你以前未交過稅，張單個總數會睇落大過「今年真正要交」大約一倍。其中一半係預繳，明年會計返畀你扣。日期以張單為準。",
+    ],
+  },
+  vhis: {
+    title: "自願醫保係咩？",
+    paragraphs: [
+      "自願醫保即係一份醫療保險，睇私家醫生或者私家醫院，有機會報銷部分錢。要政府認可嗰隻，先至可以扣稅。",
+      "你交保費，政府計稅時當你少賺咗一截。每個人每年最多當少賺 $8,000。",
+      "可以幫自己、老公老婆、仔女或者爸媽買。每多一個人，就多 $8,000 額度。好似買保護罩，政府再幫你付一截保費。",
+    ],
+  },
+  annuity: {
+    title: "延期年金係咩？",
+    paragraphs: [
+      "合資格延期年金即係而家放一筆錢，鎖住等到退休先至每月拎返嚟用。等於將今日嘅錢留畀將來嘅自己。",
+      "政府計稅時可以當你少賺咗。年金同 TVC 加埋，每年最多當少賺 $60,000。多過呢個數，多出嚟嗰截唔會再減稅。",
+      "官方簡稱 QDAP。唔係普通儲蓄保險都計，要產品本身係合資格延期年金。",
+    ],
+  },
+  tvc: {
+    title: "TVC 係咩？",
+    paragraphs: [
+      "你平常出糧，已經有 5% 強積金，第一頁扣咗。TVC 係喺呢 5% 之外，自己再額外存一筆進強積金。",
+      "呢筆額外儲蓄同樣可以扣稅，但同年金共用 $60,000。兩個一齊做，政府會先計 TVC，剩低嘅額度先畀年金。",
+      "呢筆錢通常要等到退休先拎到，唔係活期存款。",
+    ],
+  },
+  treasure: {
+    title: "慳到嘅稅點計？",
+    paragraphs: [
+      "政府唔係直接退現金畀你。係計稅時當你少賺咗，所以稅單細咗。細咗嗰截，就等於政府幫你出咗一部分保費或者供款。",
+      "你仍然要自己俾錢買。買完之後交少啲稅，等於用折扣價買咗保障同退休錢。",
+      "如果成筆錢跨過兩截稅率，慳到嘅數唔會簡單等於「供款乘一個百分比」。部機會重新計一次。",
     ],
   },
 };
@@ -181,10 +219,9 @@ function shell(inner) {
         const done = index + 1 < state.step;
         return `<li class="rounded-2xl px-1 py-2 text-center text-sm font-extrabold ${current ? "bg-clay text-white" : done ? "bg-white text-leaf" : "bg-white/70 text-ink/45"}">${label}</li>`;
       }).join("")}</ol>`;
-  app.innerHTML = `${progress}<section class="rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
-  app.querySelectorAll("[data-explain]").forEach((button) => {
-    button.addEventListener("click", () => openExplain(button.dataset.explain));
-  });
+  app.innerHTML = `${tabBar()}${progress}<section class="rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
+  bindExplain(app);
+  bindTabs();
 }
 
 function renderWelcome() {
@@ -435,16 +472,216 @@ function renderResult() {
            <p>剩低 25% 預繳。</p>`}
       ${explainButton("instalments")}
     </div>
-    <button type="button" id="again" class="mt-5 h-14 w-full rounded-2xl border-2 border-line font-extrabold">再計過</button>
+    <button type="button" id="open-treasure" class="mt-5 h-14 w-full rounded-2xl bg-leaf text-lg font-extrabold text-white">睇下扣稅三寶慳幾多</button>
+    <button type="button" id="again" class="mt-3 h-14 w-full rounded-2xl border-2 border-line font-extrabold">再計過</button>
   `);
   app.querySelector("#again").addEventListener("click", () => {
     state.step = 3;
     render();
   });
+  app.querySelector("#open-treasure").addEventListener("click", () => {
+    state.tab = "treasure";
+    render();
+  });
+}
+
+function tabBar() {
+  const tab = (id, label) => `<button type="button" data-tab="${id}" class="h-14 rounded-2xl px-2 text-base font-extrabold ${state.tab === id ? "bg-clay text-white" : "bg-white text-ink"}">${label}</button>`;
+  return `<div class="mb-4 grid grid-cols-2 gap-2">${tab("tax", "1. 計稅")}${tab("treasure", "2. 扣稅三寶")}</div>`;
+}
+
+function bindExplain(root) {
+  root.querySelectorAll("[data-explain]").forEach((button) => {
+    button.addEventListener("click", () => openExplain(button.dataset.explain));
+  });
+}
+
+function bindTabs() {
+  app.querySelectorAll("[data-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.tab = button.dataset.tab;
+      render();
+    });
+  });
+}
+
+function baseIncome() {
+  const income = currentIncome();
+  if (!income.ok) return null;
+  return { gross: roundIncome(income.gross), mpf: roundIncome(income.mpf) };
+}
+
+function roundIncome(value) {
+  return Math.max(0, Math.round(Number(value) || 0));
+}
+
+function moneyControl(id, label, max) {
+  return `
+    <label class="mt-5 block font-extrabold" for="${id}">${label}
+      <span id="${id}-readout" class="mt-1 block text-3xl font-extrabold text-clay">${money(state[id])}</span>
+      <input id="${id}" type="range" min="0" max="${max}" step="500" value="${Math.min(state[id], max)}" class="mt-3 h-12 w-full accent-clay">
+      <input id="${id}-amount" inputmode="numeric" autocomplete="off" class="mt-2 h-14 w-full rounded-2xl border-2 border-line bg-paper px-4 text-xl font-extrabold" value="${state[id] ? state[id] : ""}" placeholder="0">
+    </label>`;
+}
+
+function renderTreasure() {
+  const ready = baseIncome();
+  app.innerHTML = `
+    ${tabBar()}
+    <section class="mb-32 rounded-3xl bg-white p-5 shadow-card">
+      <p class="text-base font-extrabold text-clay">慳稅神隊友</p>
+      <h2 class="mt-1 text-3xl font-extrabold leading-tight">扣稅三寶</h2>
+      <p class="mt-2">買咗呢三樣，政府計稅時當你少賺咗，稅單就可以細啲。</p>
+      <article class="mt-4 rounded-3xl bg-paper p-4">
+        <h3 class="text-xl font-extrabold">🛡️ 自願醫保</h3>
+        <p class="mt-1">買個保障，睇私家醫院有得報銷。每個人每年最多當少賺 $8,000，仲可以幫屋企人買。</p>
+        ${explainButton("vhis")}
+      </article>
+      <article class="mt-3 rounded-3xl bg-paper p-4">
+        <h3 class="text-xl font-extrabold">💰 合資格延期年金</h3>
+        <p class="mt-1">將今日嘅錢留畀將來嘅自己。供幾年，退休先每月拎。每年同 TVC 一齊，最多扣 $60,000。</p>
+        ${explainButton("annuity")}
+      </article>
+      <article class="mt-3 rounded-3xl bg-paper p-4">
+        <h3 class="text-xl font-extrabold">🏦 TVC 額外強積金</h3>
+        <p class="mt-1">平常 5% 強積金之外，再自己存多筆。同樣用緊上面嗰個 $60,000 額度。</p>
+        ${explainButton("tvc")}
+      </article>
+      ${ready ? treasureTools(ready) : `<p class="mt-5 font-extrabold">先去第一頁計好你賺幾多，我先知你原本要交幾多。</p><button type="button" id="back-tax" class="mt-4 h-14 w-full rounded-2xl bg-clay font-extrabold text-white">返去計稅</button>`}
+    </section>
+    <div id="treasure-sticky" class="fixed inset-x-0 bottom-0 z-10 px-4 pb-3"></div>`;
+  bindExplain(app);
+  bindTabs();
+  app.querySelector("#back-tax")?.addEventListener("click", () => {
+    state.tab = "tax";
+    render();
+  });
+  if (!ready) return;
+  bindTreasureControls();
+  paintTreasureResult();
+}
+
+function treasureTools(ready) {
+  const before = calculateSalariesTax(ready);
+  return `
+    <div class="mt-5 rounded-3xl bg-[#fff8f3] p-4">
+      <p>你第一頁用來計稅嘅錢</p>
+      <p class="text-3xl font-extrabold">${money(before.chargeable)}</p>
+      <p class="mt-2">${escapeHtml(compareTreasure(ready, {}).beforeRate.plain)}</p>
+      ${explainButton("chargeable")}
+    </div>
+    ${moneyControl("annuity", "你打算每年放幾多落合資格延期年金？", 100000)}
+    <div class="mt-5">
+      <p class="font-extrabold">幫幾多個人買自願醫保？包括你自己。</p>
+      <div class="mt-2 grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-3">
+        <button type="button" id="people-down" class="h-14 rounded-2xl border-2 border-line text-2xl font-extrabold" aria-label="減少一個人">−</button>
+        <p id="vhis-people" class="text-center text-3xl font-extrabold">${state.vhisPeople} 個人</p>
+        <button type="button" id="people-up" class="h-14 rounded-2xl border-2 border-line text-2xl font-extrabold" aria-label="增加一個人">+</button>
+      </div>
+    </div>
+    ${moneyControl("vhis", "你打算每年畀幾多自願醫保保費？", 80000)}
+    ${moneyControl("tvc", "你打算每年再存幾多 TVC 強積金？", 100000)}
+    <div id="treasure-live"></div>`;
+}
+
+function readMoney(value) {
+  const number = Math.round(Number(String(value).replace(/[^\d.]/g, "")) || 0);
+  return Math.min(500_000, Math.max(0, number));
+}
+
+function bindTreasureControls() {
+  for (const id of ["annuity", "vhis", "tvc"]) {
+    app.querySelector(`#${id}`).addEventListener("input", (event) => {
+      state[id] = readMoney(event.target.value);
+      syncMoneyControl(id);
+      paintTreasureResult();
+    });
+    app.querySelector(`#${id}-amount`).addEventListener("input", (event) => {
+      state[id] = readMoney(event.target.value);
+      const slider = app.querySelector(`#${id}`);
+      slider.value = String(Math.min(state[id], Number(slider.max)));
+      app.querySelector(`#${id}-readout`).textContent = money(state[id]);
+      paintTreasureResult();
+    });
+  }
+  app.querySelector("#people-down").addEventListener("click", () => setPeople(state.vhisPeople - 1));
+  app.querySelector("#people-up").addEventListener("click", () => setPeople(state.vhisPeople + 1));
+}
+
+function setPeople(next) {
+  state.vhisPeople = Math.min(9, Math.max(1, next));
+  document.getElementById("vhis-people").textContent = `${state.vhisPeople} 個人`;
+  paintTreasureResult();
+}
+
+function syncMoneyControl(id) {
+  const slider = document.getElementById(id);
+  const field = document.getElementById(`${id}-amount`);
+  slider.value = String(Math.min(state[id], Number(slider.max)));
+  if (document.activeElement !== field) field.value = state[id] ? String(state[id]) : "";
+  document.getElementById(`${id}-readout`).textContent = money(state[id]);
+}
+
+function paintTreasureResult() {
+  const host = document.getElementById("treasure-live");
+  const sticky = document.getElementById("treasure-sticky");
+  const ready = baseIncome();
+  if (!host || !sticky || !ready) return;
+  const result = compareTreasure(ready, {
+    annuity: state.annuity,
+    vhis: state.vhis,
+    tvc: state.tvc,
+    vhisPeople: state.vhisPeople,
+  });
+  const { before, after, split, saved, spent, netCost } = result;
+  const warnings = [];
+  if (split.sharedExcess > 0) {
+    warnings.push(`政府規定年金同 TVC 加埋最多只可以拎 $60,000 嚟扣稅喔！多咗 ${money(split.sharedExcess)} 唔會計。`);
+  }
+  if (split.vhisExcess > 0) {
+    warnings.push(`自願醫保每個人每年最多扣 $8,000。你幫 ${split.people} 個人買，最多扣 ${money(split.vhisCap)}。多咗 ${money(split.vhisExcess)} 唔會計。`);
+  }
+  const movedBand = before.tax > 0 && after.tax > 0 && result.beforeRate.percent !== result.afterRate.percent;
+  let story = "拉條滑桿，或者打個數，睇下可以慳幾多。";
+  if (before.tax === 0) {
+    story = "你本來已經唔使交稅。買三寶唔會再慳到稅，但保障同退休儲蓄仍然可以有用。";
+  } else if (spent > 0 && saved === 0) {
+    story = "呢筆錢未幫到你減稅。可能已經超過政府俾嘅上限，或者你本來交嘅稅已經係 $0。";
+  } else if (saved > 0) {
+    story = `你打算用 ${money(spent)} 買扣稅三寶。政府當你少賺 ${money(split.allowed)}，稅就由 ${money(before.tax)} 變成 ${money(after.tax)}。即係政府幫你出咗 ${money(saved)}，你用折扣價 ${money(netCost)} 買咗呢份理財同保障。`;
+  }
+  sticky.innerHTML = `
+    <div class="savings-pop mx-auto flex max-w-lg items-center justify-between rounded-2xl bg-[#ffe8a3] px-4 py-3 shadow-card">
+      <span class="text-lg font-extrabold">🎉 慳返</span>
+      <span class="text-3xl font-extrabold text-clay">${money(saved)}</span>
+    </div>`;
+  host.innerHTML = `
+    ${warnings.map((warning) => `<p class="mt-3 font-extrabold text-clay">${escapeHtml(warning)}</p>`).join("")}
+    <p class="mt-3 text-base">年金計得 ${money(split.annuityAllowed)}，TVC 計得 ${money(split.tvcAllowed)}，自願醫保計得 ${money(split.vhisAllowed)}。</p>
+    <div class="mt-4 grid grid-cols-2 gap-3">
+      <div class="rounded-3xl bg-paper p-4">
+        <p class="text-base">原先要交</p>
+        <p class="text-3xl font-extrabold line-through decoration-ink/30">${money(before.tax)}</p>
+      </div>
+      <div class="rounded-3xl bg-paper p-4">
+        <p class="text-base">買咗三寶後</p>
+        <p class="text-3xl font-extrabold text-leaf">${money(after.tax)}</p>
+      </div>
+    </div>
+    <div class="savings-pop mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
+      <p class="text-xl font-extrabold">🎉 你總共慳返</p>
+      <p class="mt-1 text-5xl font-extrabold tracking-tight text-clay">${money(saved)}</p>
+    </div>
+    <p class="mt-4">${escapeHtml(story)}</p>
+    ${movedBand ? `<p class="mt-2">扣完之後，最後嗰截稅率變咗：${escapeHtml(result.afterRate.plain)}所以唔係成筆都用同一個百分比乘。</p>` : ""}
+    ${explainButton("treasure")}
+  `;
+  bindExplain(host);
 }
 
 function render() {
-  if (state.step === 0) renderWelcome();
+  if (state.tab === "treasure") renderTreasure();
+  else if (state.step === 0) renderWelcome();
   else if (state.step === 1) renderJob();
   else if (state.step === 2) renderMode();
   else if (state.step === 3) renderAmount();
