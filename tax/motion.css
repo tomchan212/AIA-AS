@@ -1,8 +1,9 @@
-.art { display: flex; justify-content: center; }
-.art-svg { width: 100%; height: 8.5rem; }
-.art-shield .art-svg,
-.art-future .art-svg,
-.art-vault .art-svg { height: 4.5rem; width: 4.5rem; }
+.art-img { display: block; width: 100%; height: 8.5rem; object-fit: contain; margin: 0 auto; }
+.art-shield, .art-future, .art-vault { height: 4.75rem; width: 4.75rem; }
+.art-calendar, .art-bonus, .art-bands, .art-warning, .art-savings { height: 6.5rem; }
+.job-icon { width: 2.4rem; height: 2.4rem; object-fit: contain; }
+.art-guide, .art-job, .art-coins, .art-income { animation: floaty 3.4s ease-in-out infinite; }
+.art-piggy, .art-wallet { animation: floaty 3.8s ease-in-out infinite; }
 
 .scene-in { animation: rise 0.45s ease both; }
 .art-guide .float-a { animation: floaty 3.2s ease-in-out infinite; }

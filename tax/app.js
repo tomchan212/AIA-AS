@@ -6,7 +6,7 @@ import {
   estimateEmployeeMpf,
   incomeFromMonthly,
 } from "./calc.js";
-import { art } from "./art.js";
+import { JOB_ART, art } from "./art.js";
 
 const JOBS = ["文職", "IT", "零售", "飲食", "教育", "銷售", "醫療", "建造", "Freelance", "其他"];
 const app = document.getElementById("app");
@@ -243,12 +243,12 @@ function renderWelcome() {
 
 function renderJob() {
   shell(`
-    ${art("guide")}
+    ${art("job")}
     <h2 class="text-3xl font-extrabold leading-tight">你做邊行㗎？</h2>
     <p class="mt-2">揀一個就得，純粹想親切啲。計稅唔會用到。</p>
     ${explainButton("job")}
     <div class="mt-4 grid grid-cols-2 gap-3">
-      ${JOBS.map((job) => `<button type="button" class="h-14 rounded-2xl border-2 text-lg font-extrabold ${state.job === job ? "border-clay bg-clay text-white" : "border-line bg-paper"}" data-job="${escapeHtml(job)}">${escapeHtml(job)}</button>`).join("")}
+      ${JOBS.map((job) => `<button type="button" class="flex h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 text-base font-extrabold ${state.job === job ? "border-clay bg-clay text-white" : "border-line bg-paper"}" data-job="${escapeHtml(job)}"><img class="job-icon" src="tax/art/${JOB_ART[job]}.png" alt="">${escapeHtml(job)}</button>`).join("")}
     </div>
     ${state.job === "其他" ? `<label class="mt-4 block font-extrabold">想寫得具體啲？<input id="job-other" class="mt-2 h-14 w-full rounded-2xl border-2 border-line bg-paper px-4 text-xl font-bold" maxlength="20" value="${escapeHtml(state.jobOther)}" placeholder="例如：設計師"></label>` : ""}
     <div class="mt-5 grid grid-cols-2 gap-3">
@@ -329,6 +329,7 @@ function renderAmount() {
     ? `
       ${moneyField("monthly", "每個月未扣強積金，袋幾多？", state.monthly, "monthly", "20000")}
       <div class="mt-4">
+        ${art("calendar")}
         <p class="font-extrabold">一年出幾多個月糧？</p>
         <div class="mt-2 grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-3">
           <button type="button" id="months-down" class="h-14 rounded-2xl border-2 border-line text-2xl font-extrabold" aria-label="減少一個月">−</button>
@@ -338,8 +339,9 @@ function renderAmount() {
         <p class="mt-1 text-base text-ink/70">有雙糧就調到 13。</p>
         ${explainButton("months")}
       </div>
+      ${art("bonus")}
       ${moneyField("bonus", "仲有冇一次過花紅或佣金？冇就留空。", state.bonus, "bonus", "0")}`
-    : moneyField("annual", "全包宴總共賺咗幾多？", state.annual, "annual", "240000");
+    : `${art("income")}${moneyField("annual", "全包宴總共賺咗幾多？", state.annual, "annual", "240000")}`;
   shell(`
     ${art("coins")}
     <h2 class="text-3xl font-extrabold leading-tight">${state.mode === "monthly" ? "每個月袋幾多？" : "全年總共袋幾多？"}</h2>
@@ -418,6 +420,7 @@ function bandBlock(bill) {
   const colors = ["#f3d7b0", "#e7b48a", "#d98a55", "#c4622d", "#8c3d22"];
   const total = slices.reduce((sum, slice) => sum + slice.amount, 0) || 1;
   return `
+    ${art("bands")}
     <div class="band-grow mt-3 flex h-4 overflow-hidden rounded-full">${slices.map((slice, index) => `<span style="width:${(slice.amount / total) * 100}%;background:${colors[index]}"></span>`).join("")}</div>
     <ul class="mt-3 space-y-2">
       ${slices.map((slice) => `<li class="flex items-start justify-between gap-3"><span>${escapeHtml(slice.plain)}</span><span class="font-extrabold">${money(slice.tax)}</span></li>`).join("")}
@@ -440,7 +443,7 @@ function renderResult() {
     ${explainButton("tax")}
     <div class="mt-5 space-y-3 rounded-3xl bg-paper p-4">
       <div>
-        ${art("coins")}
+        ${art("income")}
         <p class="text-base text-ink/70">你一年總共賺咗</p>
         <p class="text-2xl font-extrabold">${money(bill.gross)}</p>
         ${explainButton("gross")}
@@ -469,6 +472,7 @@ function renderResult() {
       ${bandBlock(bill)}
     </div>
     <div class="mt-4 rounded-3xl bg-paper p-4">
+      ${art("instalments")}
       <h3 class="text-xl font-extrabold">${zero ? "幾時要交？" : "分兩期交"}</h3>
       ${zero
         ? `<p class="mt-2">未使交，所以都未使諗分幾期。你仍可能收到報稅表，填完計出嚟都係 $0。</p>`
@@ -541,7 +545,7 @@ function renderTreasure() {
       <p class="text-base font-extrabold text-clay">慳稅神隊友</p>
       <h2 class="mt-1 text-3xl font-extrabold leading-tight">扣稅三寶</h2>
       <p class="mt-2">買咗呢三樣，政府計稅時當你少賺咗，稅單就可以細啲。</p>
-      <div class="mt-4 flex justify-around">${art("shield")}${art("future")}${art("vault")}</div>
+      ${art("trio")}
       <article class="mt-4 rounded-3xl bg-paper p-4">
         <div class="flex items-center gap-3">${art("shield")}<h3 class="text-xl font-extrabold">自願醫保</h3></div>
         <p class="mt-1">買個保障，睇私家醫院有得報銷。每個人每年最多當少賺 $8,000，仲可以幫屋企人買。</p>
@@ -666,7 +670,7 @@ function paintTreasureResult() {
       <span class="text-3xl font-extrabold text-clay" data-count="${saved}">${money(0)}</span>
     </div>`;
   host.innerHTML = `
-    ${warnings.map((warning) => `<p class="mt-3 font-extrabold text-clay">${escapeHtml(warning)}</p>`).join("")}
+    ${warnings.length ? `${art("warning")}${warnings.map((warning) => `<p class="mt-3 font-extrabold text-clay">${escapeHtml(warning)}</p>`).join("")}` : ""}
     <p class="mt-3 text-base">年金計得 ${money(split.annuityAllowed)}，TVC 計得 ${money(split.tvcAllowed)}，自願醫保計得 ${money(split.vhisAllowed)}。</p>
     <div class="mt-4 grid grid-cols-2 items-end gap-3">
       <div>
@@ -680,6 +684,7 @@ function paintTreasureResult() {
         <p class="text-3xl font-extrabold text-leaf">${money(after.tax)}</p>
       </div>
     </div>
+    ${saved > 0 ? art("savings") : ""}
     <div class="savings-pop relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
       ${saved > 0 ? `<div class="confetti">${Array.from({ length: 12 }, (_, index) => `<i style="--i:${index}"></i>`).join("")}</div>` : ""}
       <p class="text-xl font-extrabold">🎉 你總共慳返</p>
