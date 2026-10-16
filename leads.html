@@ -13,10 +13,15 @@
     <div>
       <p class="leads-kicker">AIA</p>
       <h1>冷電名單</h1>
-      <p>先生成未打過的號碼。打完先按結果分類。姓名同 remarks 只在傾過之後由你自己填。</p>
     </div>
-    <a class="leads-link" href="admin.html">返回後台</a>
+    <a class="leads-link" href="admin.html">後台</a>
   </header>
+  <nav class="section-nav" aria-label="清單">
+    <a href="#queue-section">待電 <span id="queue-count">0</span></a>
+    <a href="#retry-section">再打 <span id="retry-count">0</span></a>
+    <a href="#talked-section">記錄 <span id="talked-count">0</span></a>
+    <a href="#dead-section">無效 <span id="dead-count">0</span></a>
+  </nav>
   <main class="leads-main">
     <section class="leads-card">
       <h2>生成待電</h2>
@@ -41,29 +46,31 @@
       <p id="command-msg" role="status"></p>
     </section>
 
-    <section class="leads-card">
+    <section class="leads-card" id="queue-section">
       <h2>待電</h2>
       <div id="queue-list"></div>
     </section>
 
-    <section class="leads-card">
+    <section class="leads-card" id="retry-section">
       <h2>再打</h2>
       <p class="leads-hint">打左唔通，或者通左但忙緊。</p>
       <div id="retry-list"></div>
     </section>
 
-    <section class="leads-card">
+    <section class="leads-card" id="talked-section">
       <h2>通話記錄</h2>
       <form id="command-form" class="generate-form">
         <input id="command-input" type="text" placeholder="將張偉成的 status 改為 accept" autocomplete="off">
         <button type="submit" class="leads-primary">更新狀態</button>
       </form>
       <div id="talked-table"></div>
-      <h3>Markdown</h3>
-      <pre id="lead-markdown"></pre>
+      <details class="markdown-fold">
+        <summary>Markdown 表格</summary>
+        <pre id="lead-markdown"></pre>
+      </details>
     </section>
 
-    <section class="leads-card">
+    <section class="leads-card" id="dead-section">
       <h2>無用戶登記</h2>
       <div id="unregistered-list"></div>
     </section>

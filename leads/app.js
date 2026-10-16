@@ -46,10 +46,10 @@ function reasonLabel(reason) {
 function outcomeButtons(number) {
   return `
     <div class="outcome-row">
-      <button type="button" data-outcome="no_answer" data-number="${escapeHtml(number)}">打左唔通</button>
-      <button type="button" data-outcome="busy" data-number="${escapeHtml(number)}">通左但忙緊</button>
-      <button type="button" data-outcome="unregistered" data-number="${escapeHtml(number)}">無用戶登記</button>
-      <button type="button" data-outcome="talked" data-number="${escapeHtml(number)}">已傾過</button>
+      <button type="button" class="outcome-btn is-miss" data-outcome="no_answer" data-number="${escapeHtml(number)}">打左唔通</button>
+      <button type="button" class="outcome-btn is-busy" data-outcome="busy" data-number="${escapeHtml(number)}">通左但忙緊</button>
+      <button type="button" class="outcome-btn is-dead" data-outcome="unregistered" data-number="${escapeHtml(number)}">無用戶登記</button>
+      <button type="button" class="outcome-btn is-talked" data-outcome="talked" data-number="${escapeHtml(number)}">已傾過</button>
     </div>`;
 }
 
@@ -58,12 +58,15 @@ function renderNumberList(host, items, emptyText, withReason) {
     host.innerHTML = `<p class="leads-hint">${emptyText}</p>`;
     return;
   }
-  host.innerHTML = items.map((item) => `
+  host.innerHTML = items.map((item) => {
+    const dial = String(item.no).replace(/\s+/g, "");
+    return `
     <article class="number-card">
-      <strong>${escapeHtml(item.no)}</strong>
-      ${withReason ? `<span>${reasonLabel(item.reason)}</span>` : ""}
+      <a class="dial-link" href="tel:+852${dial}">${escapeHtml(item.no)}</a>
+      ${withReason ? `<span class="reason-pill">${reasonLabel(item.reason)}</span>` : ""}
       ${outcomeButtons(item.no)}
-    </article>`).join("");
+    </article>`;
+  }).join("");
 }
 
 function renderTalked() {
@@ -75,21 +78,21 @@ function renderTalked() {
     return;
   }
   const body = book.talked.map((row, index) => `
-    <tr>
-      <td><input data-field="Name" data-index="${index}" value="${escapeHtml(row.Name)}" placeholder="打完先填姓名" aria-label="Name"></td>
-      <td>${escapeHtml(row["no."])}</td>
-      <td>
-        <select data-index="${index}" aria-label="status(accept/not)">
+    <article class="talked-card">
+      <a class="dial-link" href="tel:+852${escapeHtml(String(row["no."]).replace(/\s+/g, ""))}">${escapeHtml(row["no."])}</a>
+      <label>Name
+        <input data-field="Name" data-index="${index}" value="${escapeHtml(row.Name)}" placeholder="打完先填姓名" autocomplete="name">
+      </label>
+      <label>status(accept/not)
+        <select data-index="${index}">
           ${["Pending", "accept", "not"].map((status) => `<option ${row["status(accept/not)"] === status ? "selected" : ""}>${status}</option>`).join("")}
         </select>
-      </td>
-      <td><input data-field="remarks" data-index="${index}" value="${escapeHtml(row.remarks)}" placeholder="打完先填 remarks" aria-label="remarks"></td>
-    </tr>`).join("");
-  host.innerHTML = `
-    <table>
-      <thead><tr><th>Name</th><th>no.</th><th>status(accept/not)</th><th>remarks</th></tr></thead>
-      <tbody>${body}</tbody>
-    </table>`;
+      </label>
+      <label>remarks
+        <input data-field="remarks" data-index="${index}" value="${escapeHtml(row.remarks)}" placeholder="打完先填 remarks">
+      </label>
+    </article>`).join("");
+  host.innerHTML = body;
   host.querySelectorAll("select").forEach((select) => {
     select.addEventListener("change", () => {
       const index = Number(select.dataset.index);
@@ -111,6 +114,10 @@ function renderTalked() {
 }
 
 function render() {
+  document.getElementById("queue-count").textContent = String(book.queue.length);
+  document.getElementById("retry-count").textContent = String(book.retry.length);
+  document.getElementById("talked-count").textContent = String(book.talked.length);
+  document.getElementById("dead-count").textContent = String(book.unregistered.length);
   renderNumberList(document.getElementById("queue-list"), book.queue, "未有待電號碼。", false);
   renderNumberList(document.getElementById("retry-list"), book.retry, "未有需要再打的號碼。", true);
   renderTalked();
