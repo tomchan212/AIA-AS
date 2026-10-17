@@ -36,6 +36,7 @@ const EXPLAIN = {
     paragraphs: [
       "香港打工，賺到一定程度就要交薪俸稅。即係將你一年賺到嘅錢，交一截畀政府。",
       "未交過完全冇問題。你只要話我知賺幾多，我當你單身、冇仔女、冇供養爸媽，再自動扣強積金，計一個大概數。",
+      "政府計稅唔係跟日曆 1月到 12月。佢由每年 4月1日 計到下一年 3月31日。而家要計嘅，係 2026年4月1日 至 2027年3月31日入袋嘅錢。",
       "真正幾多，以稅務局張單為準。呢度係幫你心中有個譜，唔使被張單嚇親。",
     ],
   },
@@ -126,7 +127,7 @@ const EXPLAIN = {
     paragraphs: [
       "政府唔係成筆錢收同一個百分比。頭 $50,000 只收 2%，跟住每一截 $50,000 慢慢加到 6%、10%、14%，剩低先收到 17%。",
       "好似搭的士：起步平，越遠越貴，但頭嗰截永遠都係平價，唔會倒回頭加價。",
-      "稅務局叫呢個做累進稅率。",
+      "如果賺得非常多，一截截計可能貴過直接大約收 15%。政府會自動揀平啲嗰個。頭 $500 萬用 15%，再多先用 16%。",
     ],
   },
   method: {
@@ -231,7 +232,6 @@ function renderWelcome() {
     <h2 class="mt-1 text-3xl font-extrabold leading-tight">我一步步話你知，你大概要交幾多畀政府。</h2>
     <p class="mt-3">而家計緊 ${escapeHtml(TAX_YEAR.from.slice(0, 4))}年4月1日 至 ${escapeHtml(TAX_YEAR.to.slice(0, 4))}年3月31日。我當你單身，冇仔女，強積金自動扣。</p>
     ${explainButton("start")}
-    ${explainButton("year")}
     <button type="button" id="start" class="mt-6 h-14 w-full rounded-2xl bg-clay text-xl font-extrabold text-white">開始計</button>
   `);
   app.querySelector("#start").addEventListener("click", () => {
@@ -425,8 +425,7 @@ function bandBlock(bill) {
       ${slices.map((slice) => `<li class="flex items-start justify-between gap-3"><span>${escapeHtml(slice.plain)}</span><span class="font-extrabold">${money(slice.tax)}</span></li>`).join("")}
     </ul>
     <p class="mt-3">一刀切 15% 會係 ${money(bill.standard.tax)}，貴過而家呢個計法，所以用一截截。</p>
-    ${explainButton("bands", "一截截點計")}
-    ${explainButton("method", "點解唔用 15%")}`;
+    ${explainButton("bands")}`;
 }
 
 function renderResult() {
