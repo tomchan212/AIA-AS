@@ -18,6 +18,7 @@
 
 .leads-top,
 .section-nav,
+.search-bar,
 .leads-main {
   width: min(640px, calc(100% - 1.25rem));
   margin-left: auto;
@@ -369,9 +370,40 @@ pre {
   cursor: pointer;
 }
 
+.search-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.5rem;
+  align-items: end;
+  margin-bottom: 0.65rem;
+}
+
+.search-bar label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 800;
+}
+
+.search-bar input {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+#search-status {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+#search-clear {
+  min-height: 48px;
+  padding: 0 0.9rem;
+}
+
 @media (min-width: 960px) {
   .leads-top,
   .section-nav,
+  .search-bar,
   .leads-main {
     width: min(1180px, calc(100% - 3rem));
   }

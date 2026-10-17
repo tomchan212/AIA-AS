@@ -22,6 +22,13 @@
     <a href="#talked-section">記錄 <span id="talked-count">0</span></a>
     <a href="#dead-section">無效 <span id="dead-count">0</span></a>
   </nav>
+  <form id="search-form" class="search-bar" role="search">
+    <label for="lead-search">搵電話或 remarks
+      <input id="lead-search" type="search" placeholder="電話、姓名或 remarks" autocomplete="off" enterkeyhint="search">
+    </label>
+    <button type="button" id="search-clear" hidden>清除</button>
+    <p id="search-status" class="leads-hint" hidden></p>
+  </form>
   <main class="leads-main">
     <section class="leads-card" id="generate-section">
       <h2>生成待電</h2>
