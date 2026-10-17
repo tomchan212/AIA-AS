@@ -161,7 +161,7 @@ const EXPLAIN = {
     title: "自願醫保係咩？",
     paragraphs: [
       "自願醫保即係一份醫療保險，睇私家醫生或者私家醫院，有機會報銷部分錢。要政府認可嗰隻，先至可以扣稅。",
-      "你交保費，政府計稅時當你少賺咗一截。每個人每年最多當少賺 $8,000。",
+      "這裡填一年總共交幾多保費，唔係每個月嗰期。例如每月 $500，一年就填 $6,000。政府計稅時當你少賺咗一截，每個人每年最多當少賺 $8,000。",
       "可以幫自己、老公老婆、仔女或者爸媽買。每多一個人，就多 $8,000 額度。好似買保護罩，政府再幫你付一截保費。",
     ],
   },
@@ -593,7 +593,7 @@ function treasureTools(ready) {
         <button type="button" id="people-up" class="h-14 rounded-2xl border-2 border-line text-2xl font-extrabold" aria-label="增加一個人">+</button>
       </div>
     </div>
-    ${moneyControl("vhis", "你打算每年畀幾多自願醫保保費？", 80000)}
+    ${moneyControl("vhis", "你一年總共畀幾多自願醫保保費？", 80000)}
     ${moneyControl("tvc", "你打算每年再存幾多 TVC 強積金？", 100000)}
     <div id="treasure-live"></div>`;
 }
