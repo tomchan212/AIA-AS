@@ -5,6 +5,7 @@ import {
   generateCallList,
   hongKongStamp,
   markdownPages,
+  filterRetry,
   matchesLeadQuery,
   pageOf,
   RETRY_MARKDOWN_COLUMNS,
@@ -23,6 +24,7 @@ let recordPage = 1;
 let retryPage = 1;
 let deadPage = 1;
 let searchQuery = "";
+let retryFilter = "all";
 
 function loadBook() {
   try {
@@ -83,6 +85,10 @@ function leadMatches(parts) {
   return matchesLeadQuery(parts, searchQuery);
 }
 
+function visibleRetry() {
+  return filterRetry(book.retry, { reason: retryFilter, query: searchQuery });
+}
+
 function renderQueue() {
   const host = document.getElementById("queue-list");
   const queue = book.queue.filter((item) => leadMatches([item.no]));
@@ -121,13 +127,17 @@ function renderRetry() {
   renderRecordPages(
     document.getElementById("retry-list"),
     document.getElementById("retry-markdown"),
-    markdownPages(book.retry.filter((item) => leadMatches([item.no, item.remarks, retryReasonLabel(item.reason)])), undefined, RETRY_MARKDOWN_COLUMNS),
+    markdownPages(visibleRetry(), undefined, RETRY_MARKDOWN_COLUMNS),
     retryPage,
     (page) => {
       retryPage = page;
     },
     "retry",
-    searchQuery && book.retry.length ? "搵唔到符合的再打記錄。" : "未有需要再打的號碼。",
+    !book.retry.length
+      ? "未有需要再打的號碼。"
+      : searchQuery
+        ? "搵唔到符合的再打記錄。"
+        : "呢個篩選未有號碼。",
     (row) => {
       const stamp = hongKongStamp(row.at);
       const dial = String(row.no).replace(/\s+/g, "");
@@ -176,7 +186,10 @@ function renderTalked() {
 
 function render() {
   const queue = book.queue.filter((item) => leadMatches([item.no]));
-  const retry = book.retry.filter((item) => leadMatches([item.no, item.remarks, retryReasonLabel(item.reason)]));
+  const retry = visibleRetry();
+  document.querySelectorAll("[data-retry-filter]").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.retryFilter === retryFilter ? "true" : "false");
+  });
   const talked = book.talked.filter((item) => leadMatches([item["no."], item.Name, item.remarks]));
   const deadItems = book.unregistered.filter((item) => leadMatches([item.no, item.remarks]));
   document.getElementById("queue-count").textContent = String(queue.length);
@@ -340,6 +353,14 @@ document.getElementById("edit-form").addEventListener("submit", (event) => {
   saveBook();
   closeEditor();
   message.textContent = "已儲存。";
+  render();
+});
+
+document.getElementById("retry-filter").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-retry-filter]");
+  if (!button) return;
+  retryFilter = button.dataset.retryFilter;
+  retryPage = 1;
   render();
 });
 

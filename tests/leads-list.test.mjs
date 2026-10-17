@@ -4,6 +4,7 @@ import {
   classifyNumber,
   emptyBook,
   generateCallList,
+  filterRetry,
   markdownPages,
   matchesLeadQuery,
   pageOf,
@@ -85,4 +86,10 @@ test("a new generation replaces uncalled numbers and markdown is paged by Hong K
   assert.equal(matchesLeadQuery(["9123 4567", "聽日再聯絡"], "再聯絡"), true);
   assert.equal(matchesLeadQuery(["5123 8899", ""], "再聯絡"), false);
   assert.equal(matchesLeadQuery(["陳大文", "9123 4567"], ""), true);
+  const retryRows = [
+    { no: "9123 4567", reason: "no_answer", remarks: "冇人聽" },
+    { no: "5123 8899", reason: "busy", remarks: "聽日再打" },
+  ];
+  assert.deepEqual(filterRetry(retryRows, { reason: "busy" }).map((item) => item.no), ["5123 8899"]);
+  assert.deepEqual(filterRetry(retryRows, { reason: "no_answer", query: "8899" }), []);
 });

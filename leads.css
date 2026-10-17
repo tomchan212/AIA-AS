@@ -124,6 +124,29 @@ pre {
   gap: 0.35rem;
 }
 
+.retry-filter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.retry-filter button {
+  min-height: 48px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.retry-filter button[aria-pressed="true"] {
+  background: #da291c;
+  color: #fff;
+  border-color: transparent;
+}
+
 .generate-form,
 .talked-card label,
 .leads-card form {
@@ -497,6 +520,7 @@ pre {
 
 @media (hover: hover) and (pointer: fine) {
   .prefix-btn:hover,
+  .retry-filter button:hover,
   .outcome-btn:hover,
   .text-btn:hover,
   .edit-cancel:hover,
@@ -506,6 +530,7 @@ pre {
   }
 
   .prefix-btn[aria-pressed="true"]:hover,
+  .retry-filter button[aria-pressed="true"]:hover,
   .outcome-btn.is-talked:hover,
   .leads-primary:hover {
     filter: brightness(1.06);

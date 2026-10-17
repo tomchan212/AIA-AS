@@ -60,7 +60,12 @@
 
     <section class="leads-card" id="retry-section">
       <h2>再打</h2>
-      <p class="leads-hint">打左唔通，或者通左但忙緊。改結果請撳修改。</p>
+      <div class="retry-filter" id="retry-filter" role="group" aria-label="再打篩選">
+        <button type="button" data-retry-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-retry-filter="no_answer" aria-pressed="false">打左唔通</button>
+        <button type="button" data-retry-filter="busy" aria-pressed="false">忙緊</button>
+      </div>
+      <p class="leads-hint">改結果請撳修改。</p>
       <div id="retry-list"></div>
       <details class="markdown-fold">
         <summary>Markdown 表格</summary>

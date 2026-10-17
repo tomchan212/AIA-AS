@@ -7,6 +7,13 @@ export function digitsOnly(value) {
   return String(value || "").replace(/\s+/g, "");
 }
 
+export function filterRetry(items, { reason = "all", query = "" } = {}) {
+  return (items || []).filter((item) => {
+    if (reason !== "all" && item.reason !== reason) return false;
+    return matchesLeadQuery([item.no, item.remarks, retryReasonLabel(item.reason)], query);
+  });
+}
+
 export function matchesLeadQuery(parts, query) {
   const needle = String(query || "").trim().toLowerCase();
   if (!needle) return true;
