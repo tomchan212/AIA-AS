@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff4e8">
+  <title>稅務紀錄</title>
+  <link rel="stylesheet" href="fonts.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { paper: "#fff4e8", ink: "#2a211c", clay: "#c0562a", leaf: "#2d6a4f", line: "#f0e2d2" },
+          fontFamily: { sans: ["PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { margin: 0; background: #fff4e8; color: #2a211c; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
+    button { font: inherit; }
+  </style>
+</head>
+<body class="min-h-dvh bg-paper text-ink font-sans text-lg">
+  <header class="mx-auto flex w-full max-w-3xl items-center justify-between px-4 pb-2 pt-5">
+    <h1 class="text-2xl font-extrabold">稅務紀錄</h1>
+    <div class="flex gap-4 text-base font-extrabold text-clay">
+      <a class="no-underline" href="tax.html">計稅</a>
+      <a class="no-underline" href="admin.html">後台</a>
+    </div>
+  </header>
+  <main id="records" class="mx-auto w-full max-w-3xl px-4 pb-16"></main>
+  <script type="module" src="tax/records-page.js"></script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import {
   incomeFromMonthly,
 } from "./calc.js";
 import { JOB_ART, art } from "./art.js";
+import { saveTaxCalculation } from "./records.js";
 
 const JOBS = ["文職", "IT", "零售", "飲食", "教育", "銷售", "醫療", "建造", "Freelance", "其他"];
 const app = document.getElementById("app");
@@ -385,6 +386,7 @@ function renderAmount() {
     state.error = "";
     state.step = 4;
     render();
+    storeResult("salary");
   });
 }
 
@@ -438,6 +440,7 @@ function renderResult() {
     <h2 class="mt-1 text-xl font-extrabold">${zero ? "你今年未使交稅。" : "你今年大約要交"}</h2>
     <p class="mt-2 text-5xl font-extrabold tracking-tight ${zero ? "text-leaf" : ""}" data-count="${bill.tax}">${money(0)}</p>
     <p class="mt-2">${zero ? "扣完強積金都未過免稅額，政府呢年唔收你錢。" : "呢個係今年真正要交嘅稅，未計預繳下一年。"}</p>
+    <p id="save-status" class="mt-2 text-base font-extrabold text-leaf" role="status"></p>
     ${explainButton("tax")}
     <div class="mt-5 space-y-3 rounded-3xl bg-paper p-4">
       <div>
@@ -593,6 +596,8 @@ function treasureTools(ready) {
     </div>
     ${moneyControl("vhis", "你打算每年畀幾多自願醫保保費？", 80000)}
     ${moneyControl("tvc", "你打算每年再存幾多 TVC 強積金？", 100000)}
+    <button type="button" id="save-treasure" class="mt-5 h-14 w-full rounded-2xl bg-leaf text-lg font-extrabold text-white">儲存這次扣稅試算</button>
+    <p id="treasure-save-status" class="mt-2 text-base font-extrabold text-leaf" role="status"></p>
     <div id="treasure-live"></div>`;
 }
 
@@ -618,6 +623,51 @@ function bindTreasureControls() {
   }
   app.querySelector("#people-down").addEventListener("click", () => setPeople(state.vhisPeople - 1));
   app.querySelector("#people-up").addEventListener("click", () => setPeople(state.vhisPeople + 1));
+  app.querySelector("#save-treasure")?.addEventListener("click", () => storeResult("treasure"));
+}
+
+function resultPayload(kind) {
+  const income = currentIncome();
+  const before = calculateSalariesTax(income);
+  const compared = compareTreasure(income, {
+    annuity: state.annuity,
+    vhis: state.vhis,
+    tvc: state.tvc,
+    vhisPeople: state.vhisPeople,
+  });
+  const withTreasure = kind === "treasure";
+  return {
+    kind,
+    job: jobLabel(),
+    mode: state.mode,
+    gross: before.gross,
+    mpf: before.mpf,
+    allowance: before.basicAllowance,
+    chargeable: withTreasure ? compared.after.chargeable : before.chargeable,
+    tax: before.tax,
+    method: (withTreasure ? compared.after : before).method,
+    provisional: before.provisional,
+    firstInstalment: before.firstInstalment,
+    secondInstalment: before.secondInstalment,
+    annuity: withTreasure ? state.annuity : 0,
+    vhis: withTreasure ? state.vhis : 0,
+    tvc: withTreasure ? state.tvc : 0,
+    vhisPeople: state.vhisPeople,
+    taxAfter: withTreasure ? compared.after.tax : before.tax,
+    savedAmount: withTreasure ? compared.saved : 0,
+  };
+}
+
+async function storeResult(kind) {
+  const el = document.getElementById(kind === "treasure" ? "treasure-save-status" : "save-status");
+  if (!currentIncome().ok) return;
+  if (el) el.textContent = "儲存中…";
+  try {
+    await saveTaxCalculation(resultPayload(kind));
+    if (el) el.textContent = "已儲存到紀錄。";
+  } catch {
+    if (el) el.textContent = "計算好了，但未能儲存到後台。";
+  }
 }
 
 function setPeople(next) {

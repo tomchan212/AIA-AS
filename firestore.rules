@@ -66,5 +66,34 @@ service cloud.firestore {
         && (request.resource.data.ownerId == request.auth.uid || isSuperAdmin());
       allow update, delete: if canAccessOwner(resource.data.ownerId);
     }
+
+    function isValidTaxRecord() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          "kind", "job", "mode", "method", "gross", "mpf", "allowance",
+          "chargeable", "tax", "createdAt"
+        ])
+        && data.kind in ["salary", "treasure"]
+        && data.mode in ["monthly", "annual"]
+        && data.method in ["progressive", "standard"]
+        && data.job is string
+        && data.job.size() <= 40
+        && data.gross is number
+        && data.gross >= 0
+        && data.gross <= 100000000
+        && data.mpf is number
+        && data.allowance is number
+        && data.chargeable is number
+        && data.tax is number
+        && data.tax >= 0
+        && data.tax <= 100000000
+        && data.createdAt is timestamp;
+    }
+
+    match /tax_calculations/{recordId} {
+      allow create: if isValidTaxRecord();
+      allow read, delete: if true;
+      allow update: if false;
+    }
   }
 }

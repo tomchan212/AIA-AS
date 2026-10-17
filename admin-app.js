@@ -58,6 +58,7 @@ const NAV_ITEMS = [
   { id: "portfolio", label: "保單檢視", short: "保單", icon: "◈", title: "保單檢視", href: "portfolio.html" },
   { id: "leads", label: "冷電名單", short: "名單", icon: "☎", title: "冷電名單", href: "leads.html" },
   { id: "tax", label: "薪俸稅", short: "計稅", icon: "稅", title: "薪俸稅計算機", href: "tax.html" },
+  { id: "tax-records", label: "稅務紀錄", short: "紀錄", icon: "☰", title: "稅務紀錄", href: "tax-records.html" },
   { id: "editor", label: "頁面＋服務", short: "頁面", icon: "✎", title: "頁面與服務編輯" },
   { id: "notifications", label: "通知", short: "通知", icon: "🔔", title: "通知設定" },
   { id: "export", label: "匯出", short: "匯出", icon: "⇪", title: "匯出與整合" },
