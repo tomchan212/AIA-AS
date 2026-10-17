@@ -1,0 +1,83 @@
+.art-img { display: block; width: 100%; height: 8.5rem; object-fit: contain; margin: 0 auto; }
+.art-shield, .art-future, .art-vault { height: 4.75rem; width: 4.75rem; }
+.art-jar-before, .art-jar-after { height: 11rem; }
+.art-calendar, .art-bonus, .art-bands, .art-warning, .art-savings { height: 6.5rem; }
+.job-icon { width: 2.4rem; height: 2.4rem; object-fit: contain; }
+.art-piggy { animation: floaty 3.8s ease-in-out infinite; }
+.art-guide, .art-coins, .art-income { animation: floaty 3.4s ease-in-out infinite; }
+.art-wallet { animation: floaty 3.8s ease-in-out infinite; }
+
+.scene-in { animation: rise 0.45s ease both; }
+.art-guide .float-a { animation: floaty 3.2s ease-in-out infinite; }
+.art-guide .float-b,
+.art-wallet .float-a,
+.art-stack .float-b { animation: floaty 3.6s ease-in-out infinite; }
+.art-stack .float-a { animation: floaty 2.8s ease-in-out infinite; }
+.wave { transform-origin: 134px 98px; animation: wave 1.4s ease-in-out infinite; }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+.spin { transform-origin: 44px 46px; animation: spin 4s linear infinite; }
+.dash { stroke-dasharray: 4 6; animation: march 1.2s linear infinite; }
+.drop { animation: drop 2.4s ease-in-out infinite; }
+.delay-1 { animation-delay: 0.35s; }
+.delay-2 { animation-delay: 0.7s; }
+.swing { transform-origin: 60px 28px; animation: swing 2.2s ease-in-out infinite; }
+.draw { stroke-dasharray: 48; stroke-dashoffset: 48; animation: draw 0.8s ease forwards; }
+
+.blob { position: fixed; z-index: 0; border-radius: 999px; filter: blur(2px); opacity: 0.55; pointer-events: none; }
+.blob-a { width: 9rem; height: 9rem; background: #ffe8a3; top: 4rem; right: -2rem; animation: floaty 7s ease-in-out infinite; }
+.blob-b { width: 7rem; height: 7rem; background: #f7d7c8; top: 18rem; left: -2rem; animation: floaty 8s ease-in-out infinite reverse; }
+header, main { position: relative; z-index: 1; }
+#explain {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+#explain.is-open { display: flex; }
+.explain-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-top: 0.35rem;
+  padding: 0 0.75rem;
+  border: 1px solid #f0e2d2;
+  border-radius: 999px;
+  background: #fff;
+  color: #c0562a;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.band-grow { transform-origin: left center; animation: grow-x 0.8s ease both; }
+.jar { display: flex; height: 7.5rem; align-items: flex-end; overflow: hidden; border: 3px solid #f0e2d2; border-radius: 1rem 1rem 0.7rem 0.7rem; background: #fff; }
+.jar > span { display: block; width: 100%; height: var(--h); border-radius: 0.5rem 0.5rem 0 0; background: #c0562a; animation: fill-up 0.9s ease both; }
+.jar.after > span { background: #2d6a4f; }
+.confetti { position: relative; height: 0; }
+.confetti i { position: absolute; left: calc(8% + var(--i) * 7%); top: -0.2rem; width: 0.45rem; height: 0.7rem; border-radius: 2px; background: #c0562a; animation: confetti 0.9s ease-out both; animation-delay: calc(var(--i) * 0.03s); }
+.confetti i:nth-child(3n) { background: #2d6a4f; }
+.confetti i:nth-child(3n+1) { background: #ffe8a3; }
+
+#explain > div { width: min(32rem, 100%); max-height: min(78vh, 36rem); overflow: auto; animation: pop-center 0.28s ease; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(16deg); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes march { to { stroke-dashoffset: -20; } }
+@keyframes drop { 0% { transform: translateY(-6px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(18px); opacity: 0.2; } }
+@keyframes swing { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fill-up { from { height: 0; } to { height: var(--h); } }
+@keyframes confetti { from { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(2.4rem) rotate(40deg); opacity: 0; } }
+@keyframes pop-center { from { transform: scale(0.94); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes savings-pop { 0% { transform: scale(0.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.savings-pop { animation: savings-pop 0.45s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
