@@ -5,6 +5,8 @@ import {
   generateCallList,
   hongKongStamp,
   markdownPages,
+  filterRetry,
+  matchesLeadQuery,
   pageOf,
   RETRY_MARKDOWN_COLUMNS,
   retryReasonLabel,
@@ -21,6 +23,8 @@ let book = loadBook();
 let recordPage = 1;
 let retryPage = 1;
 let deadPage = 1;
+let searchQuery = "";
+let retryFilter = "all";
 
 function loadBook() {
   try {
@@ -77,10 +81,19 @@ function pagerHtml(id, page, pageCount) {
     </div>`;
 }
 
+function leadMatches(parts) {
+  return matchesLeadQuery(parts, searchQuery);
+}
+
+function visibleRetry() {
+  return filterRetry(book.retry, { reason: retryFilter, query: searchQuery });
+}
+
 function renderQueue() {
   const host = document.getElementById("queue-list");
-  host.innerHTML = book.queue.length
-    ? book.queue.map((item) => {
+  const queue = book.queue.filter((item) => leadMatches([item.no]));
+  host.innerHTML = queue.length
+    ? queue.map((item) => {
         const dial = String(item.no).replace(/\s+/g, "");
         return `
     <article class="number-card">
@@ -89,7 +102,7 @@ function renderQueue() {
       ${outcomeButtons(item.no)}
     </article>`;
       }).join("")
-    : `<p class="leads-hint">未有待電號碼。再生成會換一批，未打的不會儲存。</p>`;
+    : `<p class="leads-hint">${searchQuery && book.queue.length ? "搵唔到符合的待電。" : "未有待電號碼。再生成會換一批，未打的不會儲存。"}</p>`;
 }
 
 function renderRecordPages(host, markdownHost, pages, page, setPage, pagerId, emptyText, rowHtml) {
@@ -114,13 +127,17 @@ function renderRetry() {
   renderRecordPages(
     document.getElementById("retry-list"),
     document.getElementById("retry-markdown"),
-    markdownPages(book.retry, undefined, RETRY_MARKDOWN_COLUMNS),
+    markdownPages(visibleRetry(), undefined, RETRY_MARKDOWN_COLUMNS),
     retryPage,
     (page) => {
       retryPage = page;
     },
     "retry",
-    "未有需要再打的號碼。",
+    !book.retry.length
+      ? "未有需要再打的號碼。"
+      : searchQuery
+        ? "搵唔到符合的再打記錄。"
+        : "呢個篩選未有號碼。",
     (row) => {
       const stamp = hongKongStamp(row.at);
       const dial = String(row.no).replace(/\s+/g, "");
@@ -142,13 +159,13 @@ function renderTalked() {
   renderRecordPages(
     document.getElementById("talked-table"),
     document.getElementById("lead-markdown"),
-    markdownPages(book.talked),
+    markdownPages(book.talked.filter((item) => leadMatches([item["no."], item.Name, item.remarks]))),
     recordPage,
     (page) => {
       recordPage = page;
     },
     "record",
-    "撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。",
+    searchQuery && book.talked.length ? "搵唔到符合的通話記錄。" : "撳「已傾過」之後先會出現，姓名同 remarks 留空等你填。",
     (row) => {
       const stamp = hongKongStamp(row.at);
       const dial = String(row["no."]).replace(/\s+/g, "");
@@ -168,21 +185,41 @@ function renderTalked() {
 }
 
 function render() {
-  document.getElementById("queue-count").textContent = String(book.queue.length);
-  document.getElementById("retry-count").textContent = String(book.retry.length);
-  document.getElementById("talked-count").textContent = String(book.talked.length);
-  document.getElementById("dead-count").textContent = String(book.unregistered.length);
+  const scrollY = window.scrollY;
+  const queue = book.queue.filter((item) => leadMatches([item.no]));
+  const retry = visibleRetry();
+  document.querySelectorAll("[data-retry-filter]").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.retryFilter === retryFilter ? "true" : "false");
+  });
+  const talked = book.talked.filter((item) => leadMatches([item["no."], item.Name, item.remarks]));
+  const deadItems = book.unregistered.filter((item) => leadMatches([item.no, item.remarks]));
+  document.getElementById("queue-count").textContent = String(queue.length);
+  document.getElementById("retry-count").textContent = String(retry.length);
+  document.getElementById("talked-count").textContent = String(talked.length);
+  document.getElementById("dead-count").textContent = String(deadItems.length);
+  const status = document.getElementById("search-status");
+  const clear = document.getElementById("search-clear");
+  if (searchQuery) {
+    const found = queue.length + retry.length + talked.length + deadItems.length;
+    status.hidden = false;
+    status.textContent = found ? `搵到 ${found} 項。` : "搵唔到符合的電話或 remarks。";
+    clear.hidden = false;
+  } else {
+    status.hidden = true;
+    status.textContent = "";
+    clear.hidden = true;
+  }
   renderQueue();
   renderRetry();
   renderTalked();
   const dead = document.getElementById("unregistered-list");
-  const deadPageData = pageOf(book.unregistered, deadPage);
+  const deadPageData = pageOf(deadItems, deadPage);
   deadPage = deadPageData.page;
   const deadCards = deadPageData.items.length
     ? deadPageData.items
-        .map((item) => `<article class="record-row"><div><a class="dial-link" href="tel:+852${escapeHtml(String(item.no).replace(/\s+/g, ""))}">${escapeHtml(item.no)}</a><p class="stamp">${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}</p></div>${rowActions(item.no)}</article>`)
+        .map((item) => `<article class="record-row"><div><a class="dial-link" href="tel:+852${escapeHtml(String(item.no).replace(/\s+/g, ""))}">${escapeHtml(item.no)}</a><p class="stamp">${hongKongStamp(item.at).date} ${hongKongStamp(item.at).time}${item.remarks ? ` · ${escapeHtml(item.remarks)}` : ""}</p></div>${rowActions(item.no)}</article>`)
         .join("")
-    : `<p class="leads-hint">未有無用戶登記的號碼。</p>`;
+    : `<p class="leads-hint">${searchQuery && book.unregistered.length ? "搵唔到符合的無效號碼。" : "未有無用戶登記的號碼。"}</p>`;
   dead.innerHTML = pagerHtml("dead", deadPageData.page, deadPageData.pageCount) + deadCards;
   dead.querySelector("#dead-prev")?.addEventListener("click", () => {
     deadPage -= 1;
@@ -215,13 +252,14 @@ function render() {
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => openDeleteConfirm(button.dataset.delete));
   });
+  if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
 }
 
 function openDeleteConfirm(number) {
   document.getElementById("delete-number").textContent = number;
   document.getElementById("delete-number").dataset.number = number;
   document.getElementById("delete-sheet").hidden = false;
-  document.getElementById("delete-confirm").focus();
+  document.getElementById("delete-confirm").focus({ preventScroll: true });
 }
 
 function closeDeleteConfirm() {
@@ -285,7 +323,7 @@ function openEditor(record) {
   document.getElementById("edit-title").textContent = record.isNew ? "記錄這通電話" : "修改記錄";
   syncTalkedFields();
   document.getElementById("edit-sheet").hidden = false;
-  document.getElementById("edit-name").focus();
+  document.getElementById("edit-name").focus({ preventScroll: true });
 }
 
 function closeEditor() {
@@ -318,6 +356,34 @@ document.getElementById("edit-form").addEventListener("submit", (event) => {
   closeEditor();
   message.textContent = "已儲存。";
   render();
+});
+
+document.getElementById("retry-filter").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-retry-filter]");
+  if (!button) return;
+  retryFilter = button.dataset.retryFilter;
+  retryPage = 1;
+  render();
+});
+
+document.getElementById("lead-search").addEventListener("input", (event) => {
+  searchQuery = event.target.value;
+  retryPage = 1;
+  recordPage = 1;
+  deadPage = 1;
+  render();
+});
+document.getElementById("search-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+});
+document.getElementById("search-clear").addEventListener("click", () => {
+  searchQuery = "";
+  document.getElementById("lead-search").value = "";
+  retryPage = 1;
+  recordPage = 1;
+  deadPage = 1;
+  render();
+  document.getElementById("lead-search").focus({ preventScroll: true });
 });
 
 document.getElementById("prefix-row").addEventListener("click", (event) => {

@@ -7,6 +7,23 @@ export function digitsOnly(value) {
   return String(value || "").replace(/\s+/g, "");
 }
 
+export function filterRetry(items, { reason = "all", query = "" } = {}) {
+  return (items || []).filter((item) => {
+    if (reason !== "all" && item.reason !== reason) return false;
+    return matchesLeadQuery([item.no, item.remarks, retryReasonLabel(item.reason)], query);
+  });
+}
+
+export function matchesLeadQuery(parts, query) {
+  const needle = String(query || "").trim().toLowerCase();
+  if (!needle) return true;
+  const text = parts.filter((part) => part != null && part !== "").join(" ").toLowerCase();
+  if (text.includes(needle)) return true;
+  const digitNeedle = needle.replace(/\D/g, "");
+  if (!digitNeedle) return false;
+  return parts.some((part) => digitsOnly(part).includes(digitNeedle));
+}
+
 export function formatHongKongMobile(digits) {
   const raw = digitsOnly(digits);
   return `${raw.slice(0, 4)} ${raw.slice(4)}`;

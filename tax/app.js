@@ -7,6 +7,7 @@ import {
   incomeFromMonthly,
 } from "./calc.js";
 import { JOB_ART, art } from "./art.js";
+import { saveTaxCalculation } from "./records.js";
 
 const JOBS = ["文職", "IT", "零售", "飲食", "教育", "銷售", "醫療", "建造", "Freelance", "其他"];
 const app = document.getElementById("app");
@@ -160,7 +161,7 @@ const EXPLAIN = {
     title: "自願醫保係咩？",
     paragraphs: [
       "自願醫保即係一份醫療保險，睇私家醫生或者私家醫院，有機會報銷部分錢。要政府認可嗰隻，先至可以扣稅。",
-      "你交保費，政府計稅時當你少賺咗一截。每個人每年最多當少賺 $8,000。",
+      "這裡填一年總共交幾多保費，唔係每個月嗰期。例如每月 $500，一年就填 $6,000。政府計稅時當你少賺咗一截，每個人每年最多當少賺 $8,000。",
       "可以幫自己、老公老婆、仔女或者爸媽買。每多一個人，就多 $8,000 額度。好似買保護罩，政府再幫你付一截保費。",
     ],
   },
@@ -220,7 +221,7 @@ function shell(inner) {
         const done = index + 1 < state.step;
         return `<li class="rounded-2xl px-1 py-2 text-center text-sm font-extrabold ${current ? "bg-clay text-white" : done ? "bg-white text-leaf" : "bg-white/70 text-ink/45"}">${label}</li>`;
       }).join("")}</ol>`;
-  app.innerHTML = `${tabBar()}${progress}<section class="scene-in rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
+  app.innerHTML = `${tabBar()}${progress}<section class="rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
   bindExplain(app);
   bindTabs();
 }
@@ -385,6 +386,7 @@ function renderAmount() {
     state.error = "";
     state.step = 4;
     render();
+    storeResult("salary");
   });
 }
 
@@ -539,7 +541,7 @@ function renderTreasure() {
   const ready = baseIncome();
   app.innerHTML = `
     ${tabBar()}
-    <section class="scene-in mb-32 rounded-3xl bg-white p-5 shadow-card">
+    <section class="mb-32 rounded-3xl bg-white p-5 shadow-card">
       <p class="text-base font-extrabold text-clay">慳稅神隊友</p>
       <h2 class="mt-1 text-3xl font-extrabold leading-tight">扣稅三寶</h2>
       <p class="mt-2">買咗呢三樣，政府計稅時當你少賺咗，稅單就可以細啲。</p>
@@ -591,7 +593,7 @@ function treasureTools(ready) {
         <button type="button" id="people-up" class="h-14 rounded-2xl border-2 border-line text-2xl font-extrabold" aria-label="增加一個人">+</button>
       </div>
     </div>
-    ${moneyControl("vhis", "你打算每年畀幾多自願醫保保費？", 80000)}
+    ${moneyControl("vhis", "你一年總共畀幾多自願醫保保費？", 80000)}
     ${moneyControl("tvc", "你打算每年再存幾多 TVC 強積金？", 100000)}
     <div id="treasure-live"></div>`;
 }
@@ -618,6 +620,60 @@ function bindTreasureControls() {
   }
   app.querySelector("#people-down").addEventListener("click", () => setPeople(state.vhisPeople - 1));
   app.querySelector("#people-up").addEventListener("click", () => setPeople(state.vhisPeople + 1));
+}
+
+function resultPayload(kind) {
+  const income = currentIncome();
+  const before = calculateSalariesTax(income);
+  const compared = compareTreasure(income, {
+    annuity: state.annuity,
+    vhis: state.vhis,
+    tvc: state.tvc,
+    vhisPeople: state.vhisPeople,
+  });
+  const withTreasure = kind === "treasure";
+  return {
+    kind,
+    job: jobLabel(),
+    mode: state.mode,
+    gross: before.gross,
+    mpf: before.mpf,
+    allowance: before.basicAllowance,
+    chargeable: withTreasure ? compared.after.chargeable : before.chargeable,
+    tax: before.tax,
+    method: (withTreasure ? compared.after : before).method,
+    provisional: before.provisional,
+    firstInstalment: before.firstInstalment,
+    secondInstalment: before.secondInstalment,
+    annuity: withTreasure ? state.annuity : 0,
+    vhis: withTreasure ? state.vhis : 0,
+    tvc: withTreasure ? state.tvc : 0,
+    vhisPeople: state.vhisPeople,
+    taxAfter: withTreasure ? compared.after.tax : before.tax,
+    savedAmount: withTreasure ? compared.saved : 0,
+  };
+}
+
+let lastSavedKey = "";
+let treasureSaveTimer = 0;
+
+function scheduleTreasureSave() {
+  if (!state.annuity && !state.vhis && !state.tvc) return;
+  clearTimeout(treasureSaveTimer);
+  treasureSaveTimer = setTimeout(() => storeResult("treasure"), 800);
+}
+
+async function storeResult(kind) {
+  if (!currentIncome().ok) return;
+  const payload = resultPayload(kind);
+  const key = JSON.stringify(payload);
+  if (key === lastSavedKey) return;
+  lastSavedKey = key;
+  try {
+    await saveTaxCalculation(payload);
+  } catch {
+    lastSavedKey = "";
+  }
 }
 
 function setPeople(next) {
@@ -663,7 +719,7 @@ function paintTreasureResult() {
     story = `你打算用 ${money(spent)} 買扣稅三寶。政府當你少賺 ${money(split.allowed)}，稅就由 ${money(before.tax)} 變成 ${money(after.tax)}。即係政府幫你出咗 ${money(saved)}，你用折扣價 ${money(netCost)} 買咗呢份理財同保障。`;
   }
   sticky.innerHTML = `
-    <div class="savings-pop mx-auto flex max-w-lg items-center justify-between rounded-2xl bg-[#ffe8a3] px-4 py-3 shadow-card">
+    <div class="mx-auto flex max-w-lg items-center justify-between rounded-2xl bg-[#ffe8a3] px-4 py-3 shadow-card">
       <span class="text-lg font-extrabold">🎉 慳返</span>
       <span class="text-3xl font-extrabold text-clay" data-count="${saved}">${money(0)}</span>
     </div>`;
@@ -683,7 +739,7 @@ function paintTreasureResult() {
       </div>
     </div>
     ${saved > 0 ? art("savings") : ""}
-    <div class="savings-pop relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
+    <div class="relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
       ${saved > 0 ? `<div class="confetti">${Array.from({ length: 12 }, (_, index) => `<i style="--i:${index}"></i>`).join("")}</div>` : ""}
       <p class="text-xl font-extrabold">🎉 你總共慳返</p>
       <p class="mt-1 text-5xl font-extrabold tracking-tight text-clay" data-count="${saved}">${money(0)}</p>
@@ -695,9 +751,11 @@ function paintTreasureResult() {
   bindExplain(host);
   animateCounts(sticky);
   animateCounts(host);
+  scheduleTreasureSave();
 }
 
 function render() {
+  const scrollY = window.scrollY;
   if (state.tab === "treasure") renderTreasure();
   else if (state.step === 0) renderWelcome();
   else if (state.step === 1) renderJob();
@@ -705,6 +763,7 @@ function render() {
   else if (state.step === 3) renderAmount();
   else renderResult();
   animateCounts(app);
+  if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
 }
 
 function animateCounts(root) {

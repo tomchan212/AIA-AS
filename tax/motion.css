@@ -7,7 +7,6 @@
 .art-guide, .art-coins, .art-income { animation: floaty 3.4s ease-in-out infinite; }
 .art-wallet { animation: floaty 3.8s ease-in-out infinite; }
 
-.scene-in { animation: rise 0.45s ease both; }
 .art-guide .float-a { animation: floaty 3.2s ease-in-out infinite; }
 .art-guide .float-b,
 .art-wallet .float-a,
