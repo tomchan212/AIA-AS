@@ -1,4 +1,4 @@
-import { deleteTaxCalculation, listTaxCalculations, watchAuth } from "./records.js";
+import { deleteTaxCalculation, listTaxCalculations } from "./records.js";
 
 const host = document.getElementById("records");
 let pendingDelete = "";
@@ -66,7 +66,7 @@ async function show() {
       ? `<div class="grid gap-3">${records.map(card).join("")}</div>`
       : `<p class="rounded-3xl bg-white p-5 font-extrabold">未有儲存的計算。去計稅頁計一次就會自動存低。</p>`;
   } catch {
-    host.innerHTML = `<p class="rounded-3xl bg-white p-5 font-extrabold text-clay">未能讀取紀錄。請確認已登入後台。</p>`;
+    host.innerHTML = `<p class="rounded-3xl bg-white p-5 font-extrabold text-clay">未能讀取紀錄。請稍後再試。</p>`;
   }
   host.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -87,10 +87,4 @@ async function show() {
   });
 }
 
-watchAuth((user) => {
-  if (!user) {
-    window.location.replace("admin-login.html");
-    return;
-  }
-  show();
-});
+show();
