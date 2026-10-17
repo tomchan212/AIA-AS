@@ -440,7 +440,6 @@ function renderResult() {
     <h2 class="mt-1 text-xl font-extrabold">${zero ? "你今年未使交稅。" : "你今年大約要交"}</h2>
     <p class="mt-2 text-5xl font-extrabold tracking-tight ${zero ? "text-leaf" : ""}" data-count="${bill.tax}">${money(0)}</p>
     <p class="mt-2">${zero ? "扣完強積金都未過免稅額，政府呢年唔收你錢。" : "呢個係今年真正要交嘅稅，未計預繳下一年。"}</p>
-    <p id="save-status" class="mt-2 text-base font-extrabold text-leaf" role="status"></p>
     ${explainButton("tax")}
     <div class="mt-5 space-y-3 rounded-3xl bg-paper p-4">
       <div>
@@ -596,8 +595,6 @@ function treasureTools(ready) {
     </div>
     ${moneyControl("vhis", "你打算每年畀幾多自願醫保保費？", 80000)}
     ${moneyControl("tvc", "你打算每年再存幾多 TVC 強積金？", 100000)}
-    <button type="button" id="save-treasure" class="mt-5 h-14 w-full rounded-2xl bg-leaf text-lg font-extrabold text-white">儲存這次扣稅試算</button>
-    <p id="treasure-save-status" class="mt-2 text-base font-extrabold text-leaf" role="status"></p>
     <div id="treasure-live"></div>`;
 }
 
@@ -623,7 +620,6 @@ function bindTreasureControls() {
   }
   app.querySelector("#people-down").addEventListener("click", () => setPeople(state.vhisPeople - 1));
   app.querySelector("#people-up").addEventListener("click", () => setPeople(state.vhisPeople + 1));
-  app.querySelector("#save-treasure")?.addEventListener("click", () => storeResult("treasure"));
 }
 
 function resultPayload(kind) {
@@ -658,15 +654,25 @@ function resultPayload(kind) {
   };
 }
 
+let lastSavedKey = "";
+let treasureSaveTimer = 0;
+
+function scheduleTreasureSave() {
+  if (!state.annuity && !state.vhis && !state.tvc) return;
+  clearTimeout(treasureSaveTimer);
+  treasureSaveTimer = setTimeout(() => storeResult("treasure"), 800);
+}
+
 async function storeResult(kind) {
-  const el = document.getElementById(kind === "treasure" ? "treasure-save-status" : "save-status");
   if (!currentIncome().ok) return;
-  if (el) el.textContent = "儲存中…";
+  const payload = resultPayload(kind);
+  const key = JSON.stringify(payload);
+  if (key === lastSavedKey) return;
+  lastSavedKey = key;
   try {
-    await saveTaxCalculation(resultPayload(kind));
-    if (el) el.textContent = "已儲存到紀錄。";
+    await saveTaxCalculation(payload);
   } catch {
-    if (el) el.textContent = "計算好了，但未能儲存到後台。";
+    lastSavedKey = "";
   }
 }
 
@@ -745,6 +751,7 @@ function paintTreasureResult() {
   bindExplain(host);
   animateCounts(sticky);
   animateCounts(host);
+  scheduleTreasureSave();
 }
 
 function render() {
