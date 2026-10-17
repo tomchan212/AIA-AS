@@ -185,6 +185,7 @@ function renderTalked() {
 }
 
 function render() {
+  const scrollY = window.scrollY;
   const queue = book.queue.filter((item) => leadMatches([item.no]));
   const retry = visibleRetry();
   document.querySelectorAll("[data-retry-filter]").forEach((button) => {
@@ -251,13 +252,14 @@ function render() {
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => openDeleteConfirm(button.dataset.delete));
   });
+  if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
 }
 
 function openDeleteConfirm(number) {
   document.getElementById("delete-number").textContent = number;
   document.getElementById("delete-number").dataset.number = number;
   document.getElementById("delete-sheet").hidden = false;
-  document.getElementById("delete-confirm").focus();
+  document.getElementById("delete-confirm").focus({ preventScroll: true });
 }
 
 function closeDeleteConfirm() {
@@ -321,7 +323,7 @@ function openEditor(record) {
   document.getElementById("edit-title").textContent = record.isNew ? "記錄這通電話" : "修改記錄";
   syncTalkedFields();
   document.getElementById("edit-sheet").hidden = false;
-  document.getElementById("edit-name").focus();
+  document.getElementById("edit-name").focus({ preventScroll: true });
 }
 
 function closeEditor() {
@@ -381,7 +383,7 @@ document.getElementById("search-clear").addEventListener("click", () => {
   recordPage = 1;
   deadPage = 1;
   render();
-  document.getElementById("lead-search").focus();
+  document.getElementById("lead-search").focus({ preventScroll: true });
 });
 
 document.getElementById("prefix-row").addEventListener("click", (event) => {

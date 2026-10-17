@@ -220,7 +220,7 @@ function shell(inner) {
         const done = index + 1 < state.step;
         return `<li class="rounded-2xl px-1 py-2 text-center text-sm font-extrabold ${current ? "bg-clay text-white" : done ? "bg-white text-leaf" : "bg-white/70 text-ink/45"}">${label}</li>`;
       }).join("")}</ol>`;
-  app.innerHTML = `${tabBar()}${progress}<section class="scene-in rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
+  app.innerHTML = `${tabBar()}${progress}<section class="rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
   bindExplain(app);
   bindTabs();
 }
@@ -539,7 +539,7 @@ function renderTreasure() {
   const ready = baseIncome();
   app.innerHTML = `
     ${tabBar()}
-    <section class="scene-in mb-32 rounded-3xl bg-white p-5 shadow-card">
+    <section class="mb-32 rounded-3xl bg-white p-5 shadow-card">
       <p class="text-base font-extrabold text-clay">慳稅神隊友</p>
       <h2 class="mt-1 text-3xl font-extrabold leading-tight">扣稅三寶</h2>
       <p class="mt-2">買咗呢三樣，政府計稅時當你少賺咗，稅單就可以細啲。</p>
@@ -663,7 +663,7 @@ function paintTreasureResult() {
     story = `你打算用 ${money(spent)} 買扣稅三寶。政府當你少賺 ${money(split.allowed)}，稅就由 ${money(before.tax)} 變成 ${money(after.tax)}。即係政府幫你出咗 ${money(saved)}，你用折扣價 ${money(netCost)} 買咗呢份理財同保障。`;
   }
   sticky.innerHTML = `
-    <div class="savings-pop mx-auto flex max-w-lg items-center justify-between rounded-2xl bg-[#ffe8a3] px-4 py-3 shadow-card">
+    <div class="mx-auto flex max-w-lg items-center justify-between rounded-2xl bg-[#ffe8a3] px-4 py-3 shadow-card">
       <span class="text-lg font-extrabold">🎉 慳返</span>
       <span class="text-3xl font-extrabold text-clay" data-count="${saved}">${money(0)}</span>
     </div>`;
@@ -683,7 +683,7 @@ function paintTreasureResult() {
       </div>
     </div>
     ${saved > 0 ? art("savings") : ""}
-    <div class="savings-pop relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
+    <div class="relative mt-4 rounded-3xl bg-[#ffe8a3] p-5 text-center">
       ${saved > 0 ? `<div class="confetti">${Array.from({ length: 12 }, (_, index) => `<i style="--i:${index}"></i>`).join("")}</div>` : ""}
       <p class="text-xl font-extrabold">🎉 你總共慳返</p>
       <p class="mt-1 text-5xl font-extrabold tracking-tight text-clay" data-count="${saved}">${money(0)}</p>
@@ -698,6 +698,7 @@ function paintTreasureResult() {
 }
 
 function render() {
+  const scrollY = window.scrollY;
   if (state.tab === "treasure") renderTreasure();
   else if (state.step === 0) renderWelcome();
   else if (state.step === 1) renderJob();
@@ -705,6 +706,7 @@ function render() {
   else if (state.step === 3) renderAmount();
   else renderResult();
   animateCounts(app);
+  if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
 }
 
 function animateCounts(root) {
