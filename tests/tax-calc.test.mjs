@@ -8,6 +8,7 @@ import {
   estimateEmployeeMpf,
   incomeFromMonthly,
   marginalRate,
+  parentClaim,
 } from "../tax/calc.js";
 
 test("2026/27 basic allowance matches the IRD example", () => {
@@ -83,4 +84,52 @@ test("very high income uses the cheaper two-tier standard rate", () => {
   assert.equal(bill.progressive.tax, 977_350);
   assert.equal(bill.method, "standard");
   assert.equal(bill.tax, 910_000);
+});
+
+test("dependent parents add the 2026/27 allowance before tax", () => {
+  assert.equal(TAX_YEAR.parent60, 55_000);
+  assert.equal(TAX_YEAR.parent55, 27_500);
+  const together = parentClaim({ aged60: 2, aged60With: 2 });
+  assert.equal(together.amount, 220_000);
+  const bill = calculateSalariesTax({ gross: 500_000, mpf: 18_000, aged60: 2, aged60With: 2 });
+  assert.equal(bill.parentAllowance, 220_000);
+  assert.equal(bill.allowance, 365_000);
+  assert.equal(bill.netIncome, 482_000);
+  assert.equal(bill.chargeable, 117_000);
+  assert.equal(bill.tax, 5_700);
+  assert.equal(bill.method, "progressive");
+
+  const younger = calculateSalariesTax({ gross: 380_000, mpf: 0, aged55: 1 });
+  assert.equal(younger.parentAllowance, 27_500);
+  assert.equal(younger.chargeable, 207_500);
+  assert.equal(younger.tax, 17_275);
+
+  const capped = parentClaim({ aged60: 1, aged60With: 9, aged55: 20, aged55With: 3 });
+  assert.equal(capped.aged60, 1);
+  assert.equal(capped.aged60With, 1);
+  assert.equal(capped.aged55, 8);
+  assert.equal(capped.aged55With, 3);
+  assert.equal(capped.amount, 110_000 + 8 * 27_500 + 3 * 27_500);
+});
+
+test("parent allowance lowers the treasure comparison and not the standard-rate base", () => {
+  const base = { gross: 240_000, mpf: 12_000, aged60: 1 };
+  const compared = compareTreasure(base, { annuity: 10_000 });
+  assert.equal(compared.before.parentAllowance, 55_000);
+  assert.equal(compared.before.tax, 560);
+  assert.equal(compared.after.chargeable, 18_000);
+  assert.equal(compared.after.tax, 360);
+  assert.equal(compared.saved, 200);
+
+  const switched = calculateSalariesTax({ gross: 6_000_000, mpf: 0, aged60: 4, aged60With: 4 });
+  assert.equal(switched.parentAllowance, 440_000);
+  assert.equal(switched.method, "progressive");
+  assert.equal(switched.tax, 902_550);
+  assert.ok(switched.tax < switched.standard.tax);
+
+  const unchanged = calculateSalariesTax({ gross: 4_000_000, mpf: 0, aged60: 1 });
+  assert.equal(unchanged.parentAllowance, 55_000);
+  assert.equal(unchanged.method, "standard");
+  assert.equal(unchanged.tax, 600_000);
+  assert.equal(unchanged.tax, calculateSalariesTax({ gross: 4_000_000, mpf: 0 }).tax);
 });

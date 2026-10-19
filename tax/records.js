@@ -42,6 +42,10 @@ function whole(value) {
   return Math.max(0, Math.round(number));
 }
 
+function parentCount(value) {
+  return Math.min(8, whole(value));
+}
+
 export async function saveTaxCalculation(input) {
   const payload = {
     kind: input.kind === "treasure" ? "treasure" : "salary",
@@ -51,6 +55,11 @@ export async function saveTaxCalculation(input) {
     gross: whole(input.gross),
     mpf: whole(input.mpf),
     allowance: whole(input.allowance),
+    parentAllowance: whole(input.parentAllowance),
+    parents60: parentCount(input.parents60),
+    parents60With: Math.min(parentCount(input.parents60), parentCount(input.parents60With)),
+    parents55: parentCount(input.parents55),
+    parents55With: Math.min(parentCount(input.parents55), parentCount(input.parents55With)),
     chargeable: whole(input.chargeable),
     tax: whole(input.tax),
     provisional: whole(input.provisional),

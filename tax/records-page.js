@@ -32,9 +32,24 @@ function line(label, value) {
   return `<p class="flex justify-between gap-3"><span class="text-ink/60">${label}</span><span class="font-extrabold">${value}</span></p>`;
 }
 
+function parentLine(record) {
+  const amount = Number(record.parentAllowance) || 0;
+  if (!amount) return "";
+  const older = Number(record.parents60) || 0;
+  const olderWith = Number(record.parents60With) || 0;
+  const younger = Number(record.parents55) || 0;
+  const youngerWith = Number(record.parents55With) || 0;
+  const detail = [
+    older ? `60歲或以上 ${older} 位${olderWith ? `，同住 ${olderWith} 位` : ""}` : "",
+    younger ? `55至59歲 ${younger} 位${youngerWith ? `，同住 ${youngerWith} 位` : ""}` : "",
+  ].filter(Boolean).join("；");
+  return `${line("供養爸媽", money(amount))}${detail ? line("人數", escapeHtml(detail)) : ""}`;
+}
+
 function card(record) {
   const treasure = record.kind === "treasure";
   const confirm = pendingDelete === record.id;
+  const parent = Number(record.parentAllowance) || 0;
   return `
     <article class="rounded-3xl bg-white p-4 shadow-sm">
       <div class="flex items-start justify-between gap-3">
@@ -47,7 +62,8 @@ function card(record) {
       <div class="mt-3 space-y-1 text-base">
         ${line("一年總收入", money(record.gross))}
         ${line("強積金", money(record.mpf))}
-        ${line("免稅額", money(record.allowance))}
+        ${line(parent ? "免稅額合計" : "免稅額", money(record.allowance))}
+        ${parentLine(record)}
         ${line("用來計稅", money(record.chargeable))}
         ${line("原本稅款", money(record.tax))}
         ${treasure ? line("三寶後稅款", money(record.taxAfter)) : ""}

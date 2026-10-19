@@ -5,6 +5,7 @@ import {
   estimateAnnualMpf,
   estimateEmployeeMpf,
   incomeFromMonthly,
+  parentClaim,
 } from "./calc.js";
 import { JOB_ART, art } from "./art.js";
 import { saveTaxCalculation } from "./records.js";
@@ -29,14 +30,21 @@ const state = {
   vhis: 0,
   tvc: 0,
   vhisPeople: 1,
+  askParents: false,
+  parents60: 0,
+  parents60With: 0,
+  parents55: 0,
+  parents55With: 0,
 };
+
+const PARENT_CAP = 8;
 
 const EXPLAIN = {
   start: {
     title: "呢頁係做咩？",
     paragraphs: [
       "香港打工，賺到一定程度就要交薪俸稅。即係將你一年賺到嘅錢，交一截畀政府。",
-      "未交過完全冇問題。你只要話我知賺幾多，我當你單身、冇仔女、冇供養爸媽，再自動扣強積金，計一個大概數。",
+      "未交過完全冇問題。你只要話我知賺幾多，我當你單身、冇仔女，再自動扣強積金。有供養爸媽，後面可以加上。",
       "政府計稅唔係跟日曆 1月到 12月。佢由每年 4月1日 計到下一年 3月31日。而家要計嘅，係 2026年4月1日 至 2027年3月31日入袋嘅錢。",
       "真正幾多，以稅務局張單為準。呢度係幫你心中有個譜，唔使被張單嚇親。",
     ],
@@ -111,15 +119,24 @@ const EXPLAIN = {
     title: "免稅額係咩？",
     paragraphs: [
       "免稅額即係政府話：頭一截錢當你用嚟生活，唔收稅。未過呢條線，稅係 $0。",
-      "你而家單身、冇仔女、冇供養爸媽，呢個稅年每個人有 $145,000。",
-      "好多人記得 $132,000。嗰個係舊稅年嘅數。由 2026年4月開始，政府將呢份「免費額」提高到 $145,000。",
+      "基本免稅額呢個稅年每個人有 $145,000。有供養爸媽會再加：60歲或以上每位 $55,000，55至59歲每位 $27,500。成個稅年同住，再加多一份一樣嘅數。",
+      "好多人記得 $132,000。嗰個係舊稅年嘅基本免稅額。由 2026年4月開始提高到 $145,000。",
+    ],
+  },
+  parents: {
+    title: "供養爸媽點樣少交稅？",
+    paragraphs: [
+      "你全年有出錢養爸媽，政府計稅時當你少賺咗一截。大家平時叫扣稅，稅局叫供養父母免稅額。唔係直接退現金。",
+      "60歲或以上，每位 $55,000。由 2026年4月1日到 2027年3月31日都同你住，再多 $55,000。55至59歲，每位 $27,500，同住再多 $27,500。",
+      "未夠 60 但有領政府傷殘津貼，當 60歲嗰一級。爺爺嫲嫲、外公外婆、配偶嘅爸媽，符合資格都計。同一個人只可以一個人申請。",
+      "佢要平常住喺香港。如果已經用長者住宿照顧開支為同一個人扣稅，就唔可以再申請呢份。",
     ],
   },
   chargeable: {
     title: "用來計稅嘅錢",
     paragraphs: [
-      "算法好直白：一年賺到嘅，減走強積金，再減走 $145,000。剩低嗰截先拿去計稅。",
-      "如果減完係 0，代表你未踏入要交稅嘅範圍。",
+      "算法好直白：一年賺到嘅，減走強積金，再減走免稅額。剩低嗰截先拿去計稅。",
+      "基本免稅額係 $145,000。有供養爸媽會再減。如果減完係 0，代表你未踏入要交稅嘅範圍。",
       "稅務局叫呢截做應課稅入息實額。你記住「扣完免稅額剩低幾多」就得。",
     ],
   },
@@ -143,7 +160,7 @@ const EXPLAIN = {
     title: "最後要交幾多？",
     paragraphs: [
       "呢個係你 2026/27 呢個稅年，大約真正要交嘅稅。",
-      "我當你單身，未計供養爸媽同仔女。想試下自願醫保、年金或者額外強積金，去第二頁「扣稅三寶」。",
+      "我當你單身，未計仔女。供養爸媽按你填嘅人數計。想試下自願醫保、年金或者額外強積金，去第二頁「扣稅三寶」。",
       "政府舊一個稅年（2025/26）有一次過減稅，最多減 $3,000。呢個稅年未有公布同一樣嘅減稅，所以呢度冇減。",
       "真正幾多，以稅務局張單為準。",
     ],
@@ -213,13 +230,13 @@ function explainButton(id) {
 }
 
 function shell(inner) {
-  const labels = ["做邊行", "點出糧", "賺幾多", "交幾多"];
+  const labels = ["工作", "出糧", "收入", "爸媽", "稅單"];
   const progress = state.step === 0
     ? ""
-    : `<ol class="mb-4 grid grid-cols-4 gap-2">${labels.map((label, index) => {
+    : `<ol class="mb-4 grid grid-cols-5 gap-2">${labels.map((label, index) => {
         const current = index + 1 === state.step;
         const done = index + 1 < state.step;
-        return `<li class="rounded-2xl px-1 py-2 text-center text-sm font-extrabold ${current ? "bg-clay text-white" : done ? "bg-white text-leaf" : "bg-white/70 text-ink/45"}">${label}</li>`;
+        return `<li class="rounded-2xl px-1 py-2 text-center text-xs font-extrabold leading-tight ${current ? "bg-clay text-white" : done ? "bg-white text-leaf" : "bg-white/70 text-ink/45"}">${label}</li>`;
       }).join("")}</ol>`;
   app.innerHTML = `${tabBar()}${progress}<section class="rounded-3xl bg-white p-5 shadow-card">${inner}</section>`;
   bindExplain(app);
@@ -231,7 +248,7 @@ function renderWelcome() {
     ${art("guide")}
     <p class="text-base font-extrabold text-clay">未交過稅？冇事。</p>
     <h2 class="mt-1 text-3xl font-extrabold leading-tight">我一步步話你知，你大概要交幾多畀政府。</h2>
-    <p class="mt-3">而家計緊 ${escapeHtml(TAX_YEAR.from.slice(0, 4))}年4月1日 至 ${escapeHtml(TAX_YEAR.to.slice(0, 4))}年3月31日。我當你單身，冇仔女，強積金自動扣。</p>
+    <p class="mt-3">而家計緊 ${escapeHtml(TAX_YEAR.from.slice(0, 4))}年4月1日 至 ${escapeHtml(TAX_YEAR.to.slice(0, 4))}年3月31日。我當你單身，冇仔女，強積金自動扣。有供養爸媽可以喺後面加。</p>
     ${explainButton("start")}
     <button type="button" id="start" class="mt-6 h-14 w-full rounded-2xl bg-clay text-xl font-extrabold text-white">開始計</button>
   `);
@@ -350,7 +367,7 @@ function renderAmount() {
     ${state.error ? `<p class="mt-3 font-extrabold text-clay" role="alert">${escapeHtml(state.error)}</p>` : ""}
     <div class="mt-5 grid grid-cols-2 gap-3">
       <button type="button" id="back" class="h-14 rounded-2xl border-2 border-line font-extrabold">返轉頭</button>
-      <button type="button" id="calc" class="h-14 rounded-2xl bg-clay font-extrabold text-white">計畀我睇</button>
+      <button type="button" id="next" class="h-14 rounded-2xl bg-clay font-extrabold text-white">下一步</button>
     </div>
   `);
   const bindMoney = (id, key) => {
@@ -376,7 +393,7 @@ function renderAmount() {
     state.error = "";
     render();
   });
-  app.querySelector("#calc").addEventListener("click", () => {
+  app.querySelector("#next").addEventListener("click", () => {
     const ready = currentIncome();
     if (!ready.ok) {
       state.error = ready.message;
@@ -386,7 +403,134 @@ function renderAmount() {
     state.error = "";
     state.step = 4;
     render();
-    storeResult("salary");
+  });
+}
+
+function parentCounts() {
+  return {
+    aged60: state.parents60,
+    aged60With: state.parents60With,
+    aged55: state.parents55,
+    aged55With: state.parents55With,
+  };
+}
+
+function taxArgs(income) {
+  return { gross: income.gross, mpf: income.mpf, ...parentCounts() };
+}
+
+function clearParents() {
+  state.askParents = false;
+  state.parents60 = 0;
+  state.parents60With = 0;
+  state.parents55 = 0;
+  state.parents55With = 0;
+}
+
+function changeParent(key, direction) {
+  const next = state[key] + direction;
+  if (key === "parents60") {
+    state.parents60 = Math.min(PARENT_CAP, Math.max(0, next));
+    state.parents60With = Math.min(state.parents60With, state.parents60);
+  } else if (key === "parents60With") {
+    state.parents60With = Math.min(state.parents60, Math.max(0, next));
+  } else if (key === "parents55") {
+    state.parents55 = Math.min(PARENT_CAP, Math.max(0, next));
+    state.parents55With = Math.min(state.parents55With, state.parents55);
+  } else {
+    state.parents55With = Math.min(state.parents55, Math.max(0, next));
+  }
+}
+
+function parentSentence(parents) {
+  const bits = [];
+  if (parents.aged60) {
+    const live = parents.aged60With ? `，其中 ${parents.aged60With} 位成個稅年同住` : "";
+    bits.push(`${parents.aged60} 位 60歲或以上${live}`);
+  }
+  if (parents.aged55) {
+    const live = parents.aged55With ? `，其中 ${parents.aged55With} 位成個稅年同住` : "";
+    bits.push(`${parents.aged55} 位 55至59歲${live}`);
+  }
+  return bits.join("。");
+}
+
+function parentCounter(id, value, max) {
+  const button = (dir, label, off) => `<button type="button" data-parent="${id}" data-dir="${dir}" class="h-14 rounded-2xl border-2 border-line text-2xl font-extrabold ${off ? "text-ink/25" : ""}" ${off ? "disabled" : ""} aria-label="${label}">${dir < 0 ? "−" : "+"}</button>`;
+  return `
+    <div class="mt-2 grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-3">
+      ${button(-1, "減少一位", value <= 0)}
+      <p class="text-center text-3xl font-extrabold">${value} 位</p>
+      ${button(1, "增加一位", value >= max)}
+    </div>`;
+}
+
+function parentGroup(title, detail, countKey, withKey, each) {
+  const count = state[countKey];
+  return `
+    <article class="mt-4 rounded-3xl bg-paper p-4">
+      <h3 class="text-xl font-extrabold">${title}</h3>
+      <p class="mt-1 text-base">${detail}</p>
+      <p class="mt-3 font-extrabold">幾多位？</p>
+      ${parentCounter(countKey, count, PARENT_CAP)}
+      ${count ? `<p class="mt-3 font-extrabold">其中幾多位成個稅年都同你住？</p><p class="text-base">同住再多減 ${money(each)}。</p>${parentCounter(withKey, state[withKey], count)}` : ""}
+    </article>`;
+}
+
+function finishTax() {
+  state.error = "";
+  state.step = 5;
+  render();
+  storeResult("salary");
+}
+
+function renderParents() {
+  const claim = parentClaim(parentCounts());
+  const choice = (id, picked, title, detail) => `
+    <button type="button" id="${id}" class="rounded-3xl border-2 p-4 text-left ${picked ? "border-clay bg-[#fff8f3]" : "border-line bg-paper"}">
+      <span class="block text-xl font-extrabold">${title}</span>
+      <span class="mt-1 block text-base">${detail}</span>
+    </button>`;
+  shell(`
+    ${art("guide")}
+    <h2 class="text-3xl font-extrabold leading-tight">有冇供養爸媽？</h2>
+    <p class="mt-2">你全年有出錢養佢，計稅時可以當你少賺一截。爺爺嫲嫲、外公外婆、配偶嘅爸媽都計。</p>
+    ${explainButton("parents")}
+    <div class="mt-4 grid gap-3">
+      ${choice("parents-no", !state.askParents, "冇供養", "直接用基本免稅額計。")}
+      ${choice("parents-yes", state.askParents, "有，我有供養", "話我知幾多位、幾多歲、同唔同住。")}
+    </div>
+    ${state.askParents ? `
+      ${parentGroup(`60歲或以上`, `未夠 60 但有領傷殘津貼，都當呢一級。每位減 ${money(TAX_YEAR.parent60)}。`, "parents60", "parents60With", TAX_YEAR.parent60)}
+      ${parentGroup(`55至59歲`, `每位減 ${money(TAX_YEAR.parent55)}。`, "parents55", "parents55With", TAX_YEAR.parent55)}
+      <p class="mt-4 text-xl font-extrabold">${claim.amount ? `供養爸媽可以再減 ${money(claim.amount)}` : "撳 + 加上每位爸媽。"}</p>
+    ` : ""}
+    <div class="mt-5 grid grid-cols-2 gap-3">
+      <button type="button" id="back" class="h-14 rounded-2xl border-2 border-line font-extrabold">返轉頭</button>
+      <button type="button" id="calc" class="h-14 rounded-2xl bg-clay font-extrabold text-white">計畀我睇</button>
+    </div>
+  `);
+  app.querySelector("#parents-no").addEventListener("click", () => {
+    clearParents();
+    render();
+  });
+  app.querySelector("#parents-yes").addEventListener("click", () => {
+    state.askParents = true;
+    render();
+  });
+  app.querySelectorAll("[data-parent]").forEach((button) => {
+    button.addEventListener("click", () => {
+      changeParent(button.dataset.parent, Number(button.dataset.dir));
+      render();
+    });
+  });
+  app.querySelector("#back").addEventListener("click", () => {
+    state.step = 3;
+    render();
+  });
+  app.querySelector("#calc").addEventListener("click", () => {
+    if (!state.askParents) clearParents();
+    finishTax();
   });
 }
 
@@ -432,14 +576,16 @@ function bandBlock(bill) {
 
 function renderResult() {
   const income = currentIncome();
-  const bill = calculateSalariesTax(income);
+  const bill = calculateSalariesTax(taxArgs(income));
+  const withoutParents = calculateSalariesTax({ gross: bill.gross, mpf: bill.mpf, extraDeduction: bill.extraDeduction });
+  const parentsUnused = bill.parentAllowance > 0 && bill.tax > 0 && bill.tax === withoutParents.tax;
   const zero = bill.tax === 0;
   shell(`
     ${zero ? art("calm") : art("receipt")}
     <p class="text-base font-extrabold text-clay">${escapeHtml(jobLabel())}，計好了。</p>
     <h2 class="mt-1 text-xl font-extrabold">${zero ? "你今年未使交稅。" : "你今年大約要交"}</h2>
     <p class="mt-2 text-5xl font-extrabold tracking-tight ${zero ? "text-leaf" : ""}" data-count="${bill.tax}">${money(0)}</p>
-    <p class="mt-2">${zero ? "扣完強積金都未過免稅額，政府呢年唔收你錢。" : "呢個係今年真正要交嘅稅，未計預繳下一年。"}</p>
+    <p class="mt-2">${zero ? "扣完強積金同免稅額，政府呢年唔收你錢。" : "呢個係今年真正要交嘅稅，未計預繳下一年。"}</p>
     ${explainButton("tax")}
     <div class="mt-5 space-y-3 rounded-3xl bg-paper p-4">
       <div>
@@ -456,11 +602,18 @@ function renderResult() {
       </div>
       <div>
         ${art("gate")}
-        <p class="text-base text-ink/70">政府送畀你嘅免稅額</p>
+        <p class="text-base text-ink/70">基本免稅額</p>
         <p class="text-2xl font-extrabold">− ${money(bill.basicAllowance)}</p>
-        <p class="text-base">賺唔夠呢條線，通常唔使交。舊年係 ${money(TAX_YEAR.rememberedAllowance)}，呢個稅年係 ${money(TAX_YEAR.basicAllowance)}。</p>
+        <p class="text-base">每個人都有呢份。舊年係 ${money(TAX_YEAR.rememberedAllowance)}，呢個稅年係 ${money(TAX_YEAR.basicAllowance)}。</p>
         ${explainButton("allowance")}
       </div>
+      ${bill.parentAllowance ? `<div>
+        <p class="text-base text-ink/70">供養爸媽再減</p>
+        <p class="text-2xl font-extrabold">− ${money(bill.parentAllowance)}</p>
+        <p class="text-base">${escapeHtml(parentSentence(bill.parents))}。</p>
+        ${parentsUnused ? `<p class="mt-2 text-base">你收入高到用緊一刀切計法。呢個計法唔減免稅額，所以供養爸媽未再令張單變細。</p>` : ""}
+        ${explainButton("parents")}
+      </div>` : ""}
       <div>
         <p class="text-base text-ink/70">扣完之後用來計稅嘅錢</p>
         <p class="text-2xl font-extrabold">${money(bill.chargeable)}</p>
@@ -486,8 +639,13 @@ function renderResult() {
       ${explainButton("instalments")}
     </div>
     <button type="button" id="open-treasure" class="mt-5 h-14 w-full rounded-2xl bg-leaf text-lg font-extrabold text-white">睇下扣稅三寶慳幾多</button>
-    <button type="button" id="again" class="mt-3 h-14 w-full rounded-2xl border-2 border-line font-extrabold">再計過</button>
+    <button type="button" id="edit-parents" class="mt-3 h-14 w-full rounded-2xl border-2 border-line font-extrabold">改供養爸媽</button>
+    <button type="button" id="again" class="mt-3 h-14 w-full rounded-2xl border-2 border-line font-extrabold">改收入，再計過</button>
   `);
+  app.querySelector("#edit-parents").addEventListener("click", () => {
+    state.step = 4;
+    render();
+  });
   app.querySelector("#again").addEventListener("click", () => {
     state.step = 3;
     render();
@@ -521,7 +679,7 @@ function bindTabs() {
 function baseIncome() {
   const income = currentIncome();
   if (!income.ok) return null;
-  return { gross: roundIncome(income.gross), mpf: roundIncome(income.mpf) };
+  return { gross: roundIncome(income.gross), mpf: roundIncome(income.mpf), ...parentCounts() };
 }
 
 function roundIncome(value) {
@@ -581,6 +739,7 @@ function treasureTools(ready) {
     <div class="mt-5 rounded-3xl bg-[#fff8f3] p-4">
       <p>你第一頁用來計稅嘅錢</p>
       <p class="text-3xl font-extrabold">${money(before.chargeable)}</p>
+      ${before.parentAllowance ? `<p class="mt-2">已計供養爸媽免稅額 ${money(before.parentAllowance)}。</p>` : ""}
       <p class="mt-2">${escapeHtml(compareTreasure(ready, {}).beforeRate.plain)}</p>
       ${explainButton("chargeable")}
     </div>
@@ -624,8 +783,8 @@ function bindTreasureControls() {
 
 function resultPayload(kind) {
   const income = currentIncome();
-  const before = calculateSalariesTax(income);
-  const compared = compareTreasure(income, {
+  const before = calculateSalariesTax(taxArgs(income));
+  const compared = compareTreasure(taxArgs(income), {
     annuity: state.annuity,
     vhis: state.vhis,
     tvc: state.tvc,
@@ -638,7 +797,12 @@ function resultPayload(kind) {
     mode: state.mode,
     gross: before.gross,
     mpf: before.mpf,
-    allowance: before.basicAllowance,
+    allowance: before.allowance,
+    parentAllowance: before.parentAllowance,
+    parents60: before.parents.aged60,
+    parents60With: before.parents.aged60With,
+    parents55: before.parents.aged55,
+    parents55With: before.parents.aged55With,
     chargeable: withTreasure ? compared.after.chargeable : before.chargeable,
     tax: before.tax,
     method: (withTreasure ? compared.after : before).method,
@@ -761,6 +925,7 @@ function render() {
   else if (state.step === 1) renderJob();
   else if (state.step === 2) renderMode();
   else if (state.step === 3) renderAmount();
+  else if (state.step === 4) renderParents();
   else renderResult();
   animateCounts(app);
   if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
