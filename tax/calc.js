@@ -6,7 +6,11 @@ export const TAX_YEAR = {
   to: "2027-03-31",
   basicAllowance: 145_000,
   rememberedAllowance: 132_000,
+  parent60: 55_000,
+  parent55: 27_500,
 };
+
+const MAX_PARENTS = 8;
 
 const BANDS = [
   { width: 50_000, bps: 200, label: "頭 $50,000", plain: "頭 5 萬只收 2%" },
@@ -92,13 +96,51 @@ export const TREASURE_CAPS = {
   annuityTvcCombined: 60_000,
 };
 
-export function calculateSalariesTax({ gross, mpf = 0, extraDeduction = 0, basicAllowance = TAX_YEAR.basicAllowance } = {}) {
+function parentCount(value) {
+  return Math.min(MAX_PARENTS, Math.max(0, roundDollar(value)));
+}
+
+/** Dependent parent / grandparent allowance for 2026/27. */
+export function parentClaim({ aged60 = 0, aged60With = 0, aged55 = 0, aged55With = 0 } = {}) {
+  const sixty = parentCount(aged60);
+  const mid = parentCount(aged55);
+  const sixtyWith = Math.min(sixty, parentCount(aged60With));
+  const midWith = Math.min(mid, parentCount(aged55With));
+  const basic60 = sixty * TAX_YEAR.parent60;
+  const extra60 = sixtyWith * TAX_YEAR.parent60;
+  const basic55 = mid * TAX_YEAR.parent55;
+  const extra55 = midWith * TAX_YEAR.parent55;
+  return {
+    aged60: sixty,
+    aged60With: sixtyWith,
+    aged55: mid,
+    aged55With: midWith,
+    basic60,
+    extra60,
+    basic55,
+    extra55,
+    amount: basic60 + extra60 + basic55 + extra55,
+  };
+}
+
+export function calculateSalariesTax({
+  gross,
+  mpf = 0,
+  extraDeduction = 0,
+  basicAllowance = TAX_YEAR.basicAllowance,
+  aged60 = 0,
+  aged60With = 0,
+  aged55 = 0,
+  aged55With = 0,
+} = {}) {
   const income = Math.max(0, roundDollar(gross));
   const mpfDeduction = Math.min(income, Math.max(0, roundDollar(mpf)));
   const extra = Math.min(Math.max(0, income - mpfDeduction), Math.max(0, roundDollar(extraDeduction)));
   const deduction = mpfDeduction;
   const netIncome = income - mpfDeduction - extra;
-  const allowance = Math.max(0, roundDollar(basicAllowance));
+  const basic = Math.max(0, roundDollar(basicAllowance));
+  const parents = parentClaim({ aged60, aged60With, aged55, aged55With });
+  const allowance = basic + parents.amount;
   const allowanceUsed = Math.min(netIncome, allowance);
   const chargeable = netIncome - allowanceUsed;
   const progressive = progressiveTax(chargeable);
@@ -113,7 +155,10 @@ export function calculateSalariesTax({ gross, mpf = 0, extraDeduction = 0, basic
     mpf: deduction,
     extraDeduction: extra,
     netIncome,
-    basicAllowance: allowance,
+    basicAllowance: basic,
+    parentAllowance: parents.amount,
+    parents,
+    allowance,
     allowanceUsed,
     chargeable,
     progressive,
