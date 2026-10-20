@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
+import { AgentNote } from "@/components/AgentNote";
 import { ResultView } from "@/components/ResultView";
 import { StepInput } from "@/components/StepInput";
 import { analyzePyramid } from "@/lib/analysis/analyze";
@@ -142,6 +143,7 @@ function NavButtons({ label }: { label: string }) {
 function Consent({ locale, ticked, error, onTick, onNext }: { locale: "zh-HK" | "en"; ticked: boolean; error: boolean; onTick: (value: boolean) => void; onNext: () => void }) {
   return (
     <section className="glass-card" aria-labelledby="pics-title">
+      <AgentNote locale={locale} note="coachStart" />
       <h2 id="pics-title" className="text-xl font-semibold">{t(locale, "picsTitle")}</h2>
       <div className="mt-3 space-y-2 text-sm">
         <p>{t(locale, "picsPurpose")}</p>
@@ -168,6 +170,7 @@ function ModePick() {
   const choose = (mode: "quick" | "pro") => { setMode(mode); go(step + 1); };
   return (
     <section className="space-y-3">
+      <AgentNote locale={locale} note="coachMode" />
       <h2 className="text-2xl font-semibold">{t(locale, "modeTitle")}</h2>
       <button type="button" className="glass-card w-full text-left" onClick={() => choose("quick")}><span className="text-xl font-semibold">{t(locale, "quick")}</span><span className="mt-1 block text-sm">{t(locale, "quickDetail")}</span></button>
       <button type="button" className="glass-card w-full text-left" onClick={() => choose("pro")}><span className="text-xl font-semibold">{t(locale, "pro")}</span><span className="mt-1 block text-sm">{t(locale, "proDetail")}</span></button>
@@ -186,6 +189,7 @@ function AgeStep() {
   const form = useForm({ resolver: zodResolver(ageSchema(locale)), defaultValues: { age: age ?? "", occupation } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ age: Number(values.age), occupation: values.occupation }); go(step + 1); })}>
+      <AgentNote locale={locale} note="coachAge" />
       <StepInput label={t(locale, "age")} error={form.formState.errors.age?.message?.toString()}>
         <input className="field" inputMode="numeric" aria-invalid={Boolean(form.formState.errors.age)} {...form.register("age")} />
       </StepInput>
@@ -210,6 +214,7 @@ function CountStep() {
   const form = useForm({ resolver: zodResolver(countSchema(locale)), defaultValues: { count: dependants ?? 0 } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ dependants: Number(values.count) }); go(step + 1); })}>
+      <AgentNote locale={locale} note="coachDependants" />
       <StepInput label={t(locale, "dependants")} error={form.formState.errors.count?.message?.toString()}>
         <input className="field" inputMode="numeric" {...form.register("count")} />
       </StepInput>
@@ -228,6 +233,7 @@ function CashflowStep() {
   const form = useForm({ resolver: zodResolver(cashflowSchema(locale)), defaultValues: { income: income ?? "", expense: expense ?? "" } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ monthlyIncome: Number(values.income), monthlyExpense: Number(values.expense) }); go(step + 1); })}>
+      <AgentNote locale={locale} note="coachCashflow" />
       <StepInput label={t(locale, "income")} error={form.formState.errors.income?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("income")} />
       </StepInput>
@@ -241,7 +247,9 @@ function CashflowStep() {
   );
 }
 
-function MoneyStep({ field, label, hint }: { field: "emergencyCash" | "stableSavings" | "growthInvestments" | "speculative" | "lifeCover"; label: "emergency" | "stable" | "growth" | "speculative" | "life"; hint: "emergencyHint" | "stableHint" | "growthHint" | "speculativeHint" | "lifeHint" }) {
+const moneyCoach = { emergency: "coachEmergency", stable: "coachStable", growth: "coachGrowth" } as const;
+
+function MoneyStep({ field, label, hint }: { field: "emergencyCash" | "stableSavings" | "growthInvestments"; label: "emergency" | "stable" | "growth"; hint: "emergencyHint" | "stableHint" | "growthHint" }) {
   const locale = usePyramidStore((item) => item.locale);
   const current = usePyramidStore((item) => item[field]);
   const patch = usePyramidStore((item) => item.patch);
@@ -250,6 +258,7 @@ function MoneyStep({ field, label, hint }: { field: "emergencyCash" | "stableSav
   const form = useForm({ resolver: zodResolver(amountSchema(locale)), defaultValues: { amount: current ?? "" } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ [field]: Number(values.amount) }); go(step + 1); })}>
+      <AgentNote locale={locale} note={moneyCoach[label]} />
       <StepInput label={t(locale, label)} hint={t(locale, hint)} error={form.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("amount")} />
       </StepInput>
@@ -275,6 +284,7 @@ function LifeStep() {
       patch({ lifeCover: Number(values.amount), criticalIllnessCover: mode === "pro" ? Number(values.ci || 0) : 0 });
       go(step + 1);
     })}>
+      <AgentNote locale={locale} note="coachLife" />
       <StepInput label={t(locale, "life")} hint={t(locale, "lifeHint")} error={form.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("amount")} />
       </StepInput>
@@ -304,6 +314,7 @@ function MedicalStep() {
   if (mode === "quick") {
     return (
       <form className="glass-card" onSubmit={choice.handleSubmit((values) => { patch({ hasMedical: values.choice === "yes" }); go(step + 1); })}>
+        <AgentNote locale={locale} note="coachMedical" />
         <fieldset>
           <legend className="text-lg font-semibold">{t(locale, "medicalYes")}</legend>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -318,6 +329,7 @@ function MedicalStep() {
   }
   return (
     <form className="glass-card" onSubmit={amounts.handleSubmit((values) => { patch({ medicalAnnualLimit: Number(values.amount), accidentCover: Number(values.accident || 0), hasMedical: Number(values.amount) > 0 }); go(step + 1); })}>
+      <AgentNote locale={locale} note="coachMedical" />
       <StepInput label={t(locale, "medicalLimit")} error={amounts.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...amounts.register("amount")} />
       </StepInput>
@@ -342,6 +354,7 @@ function SpeculativeStep() {
   const form = useForm({ resolver: zodResolver(speculativeSchema(locale, mode === "pro")), defaultValues: { amount: speculative ?? "", debt: liabilities ?? "" } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ speculative: Number(values.amount), liabilities: mode === "pro" ? Number(values.debt || 0) : 0 }); go(step + 1); })}>
+      <AgentNote locale={locale} note="coachSpeculative" />
       <StepInput label={t(locale, "speculative")} hint={t(locale, "speculativeHint")} error={form.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("amount")} />
       </StepInput>
@@ -377,6 +390,7 @@ function RiskStep({ page }: { page: number }) {
       patch({ riskAnswers: next });
       go(step + 1);
     })}>
+      <AgentNote locale={locale} note="coachRisk" />
       <h2 className="text-xl font-semibold">{t(locale, "riskTitle")}</h2>
       {[first, second].map((question, index) => (
         <fieldset key={question[0]} className="mt-4">

@@ -76,6 +76,22 @@ body {
 
 .dark .tool { background: rgba(255, 255, 255, 0.06); }
 
+.agent-note {
+  margin-bottom: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #f0e2d2;
+  background: #fff6ea;
+  padding: 0.9rem 1rem;
+}
+.agent-kicker {
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #8d6b1f;
+}
+.dark .agent-note { background: #2a241c; border-color: rgba(255, 255, 255, 0.12); }
+.dark .agent-kicker { color: #e6c98a; }
+
 .disclaimer {
   border-radius: 1rem;
   background: #f8e7e3;

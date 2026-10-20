@@ -5,8 +5,8 @@ import { ConsultantCTA } from "@/components/ConsultantCTA";
 import { PyramidChart } from "@/components/PyramidChart";
 import { ScoreCard } from "@/components/ScoreCard";
 import { formatHkd, formatPercent } from "@/lib/format";
-import { layerLabel, profileLabel, reasonAction, statusLabel, t } from "@/lib/i18n";
-import type { Locale, PyramidAnswers, PyramidReport } from "@/types";
+import { layerLabel, profileLabel, reasonAction, statusLabel, t, type MessageKey } from "@/lib/i18n";
+import type { Locale, PyramidAnswers, PyramidReport, ReasonCode } from "@/types";
 
 const GapRadarChart = dynamic(() => import("@/components/GapRadarChart").then((mod) => mod.GapRadarChart), { ssr: false });
 
@@ -32,11 +32,28 @@ export function summaryText(locale: Locale, report: PyramidReport, answers: Pyra
   return lines.filter(Boolean).join("\n");
 }
 
+function teachKey(reason: ReasonCode): MessageKey {
+  return `teach_${reason}`;
+}
+
 export function ResultView({ locale, report, answers, onShare }: ResultViewProps) {
   const severe = report.layers.some((layer) => layer.status === "severe");
   const summary = summaryText(locale, report, answers);
+  const months = report.emergencyMonths == null ? "—" : report.emergencyMonths.toFixed(1);
+  const lessons = [
+    t(locale, "teachOrder"),
+    t(locale, "teachEmergencyFact", { months, target: report.emergencyTargetMonths }),
+    ...(report.priorities.length ? report.priorities.map((item) => t(locale, teachKey(item.reason))) : [t(locale, "teachOk")]),
+  ];
   return (
     <div id="pyramid-report" className="space-y-4">
+      <section className="glass-card" aria-labelledby="know-title">
+        <p className="agent-kicker">{t(locale, "agentKicker")}</p>
+        <h2 id="know-title" className="text-xl font-semibold">{t(locale, "knowTitle")}</h2>
+        <ol className="mt-3 space-y-3">
+          {lessons.map((lesson) => <li key={lesson} className="text-base">{lesson}</li>)}
+        </ol>
+      </section>
       {report.warnings.length ? (
         <ul className="glass-card text-sm">
           {report.warnings.map((warning) => <li key={warning}>{reasonAction(locale, warning)}</li>)}
