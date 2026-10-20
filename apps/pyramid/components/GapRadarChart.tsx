@@ -20,7 +20,8 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
     if (!node) return;
     const reveal = () => {
       const box = node.getBoundingClientRect();
-      if (box.top < window.innerHeight * 0.92 && box.bottom > 40) setLive(true);
+      const mid = window.innerHeight * 0.62;
+      if (box.top < mid && box.bottom > window.innerHeight * 0.22) setLive(true);
     };
     reveal();
     const observer = new IntersectionObserver((entries) => {
