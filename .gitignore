@@ -1,6 +1,9 @@
 # 本機／機密（唔好上傳）
 functions/node_modules/
 functions/.env
+apps/pyramid/node_modules/
+apps/pyramid/.next/
+apps/pyramid/out/
 .firebase/
 .DS_Store
 *.log
