@@ -17,6 +17,9 @@ import type { LayerId, RiskProfile } from "@/types";
 export const PYRAMID_CONFIG = {
   version: "2026-10-20",
   currency: "HKD",
+  /** Hong Kong adviser WhatsApp. wa.me needs the country code. */
+  advisorWhatsApp: "85294729476",
+  advisorWhatsAppDisplay: "9472 9476",
   age: { min: 18, max: 100, pivot: 40 },
   emergencyMonths: { single: 3, withDependants: 6, partialRatio: 0.5 },
   lifeIncomeMultiplier: 10,
