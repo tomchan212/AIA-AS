@@ -75,10 +75,13 @@ export function Wizard() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-4 py-6">
+      <div className="blob blob-a no-print" aria-hidden="true" />
+      <div className="blob blob-b no-print" aria-hidden="true" />
+      <div className="blob blob-c no-print" aria-hidden="true" />
       <a className="sr-only focus:not-sr-only" href="#step-panel">{t(locale, "title")}</a>
       <header className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t(locale, "title")}</h1>
+          <h1 className="text-3xl font-bold"><span className="title-mark" aria-hidden="true" />{t(locale, "title")}</h1>
           <p className="mt-1 text-sm text-ink/70 dark:text-paper/70">{t(locale, "lead")}</p>
         </div>
         <div className="flex gap-2">
@@ -88,7 +91,7 @@ export function Wizard() {
       </header>
       <p className="disclaimer">{t(locale, "disclaimer")}</p>
       <div className="my-4 h-2 overflow-hidden rounded-full bg-ink/10" aria-hidden="true">
-        <div className="h-full bg-enough" style={{ width: progress }} />
+        <motion.div className="progress-fill h-full bg-enough" initial={false} animate={{ width: progress }} transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 90, damping: 18 }} />
       </div>
       <p className="mb-3 text-sm font-semibold">{t(locale, "step", { n: state.step + 1, total: STEP_IDS.length })}</p>
       {state.sample ? <p className="mb-3 rounded-2xl bg-gold/15 px-3 py-2 text-sm font-semibold">{t(locale, "sampleOn")}</p> : null}
@@ -96,10 +99,10 @@ export function Wizard() {
         <motion.div
           id="step-panel"
           key={stepId}
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduce ? undefined : { opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
+          initial={reduce ? false : { opacity: 0, y: 28, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={reduce ? undefined : { opacity: 0, y: -18, scale: 0.98 }}
+          transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }}
         >
           {stepId === "consent" ? <Consent locale={locale} ticked={consentTick} error={consentError} onTick={setConsentTick} onNext={() => {
             if (!consentTick) { setConsentError(true); return; }

@@ -50,12 +50,12 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
   const column = (title: string, bands: { d: string; labelY: number; height: number }[], mode: "ideal" | "actual") => (
     <figure className="min-w-0 flex-1">
       <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
-      <svg viewBox="0 0 200 230" className="mx-auto h-64 w-full max-w-[220px]" role="img" aria-label={`${title}. ${caption}`}>
+      <svg viewBox="0 0 200 230" className={`mx-auto h-64 w-full max-w-[220px] ${mode === "ideal" ? "pyramid-soon" : "pyramid-late"}`} role="img" aria-label={`${title}. ${caption}`}>
         {order.map((layer, index) => {
           const path = bands[index];
           const fill = mode === "ideal" ? FILL.ideal : FILL[layer.status];
           return (
-            <g key={`${mode}-${layer.id}`}>
+            <g key={`${mode}-${layer.id}`} className="pyramid-band" style={{ ["--i" as string]: index }}>
               <path d={path.d} fill={fill} opacity={mode === "ideal" ? 0.85 : 0.95}>
                 <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
               </path>
@@ -79,9 +79,9 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
       </div>
       <ul className="mt-3 space-y-2">
         {layers.map((layer) => (
-          <li key={layer.id} className="flex items-start justify-between gap-3 text-sm">
+          <li key={layer.id} className="legend-row flex items-start justify-between gap-3 text-sm">
             <span>
-              <span className="mr-2 inline-block h-3 w-3 rounded-full align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
+              <span className="dot-live mr-2 inline-block h-3 w-3 rounded-full align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
               {layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}
             </span>
             <span className="font-semibold">{formatHkd(layer.actualAmount, locale)} / {formatPercent(layer.actualShare, locale)}</span>

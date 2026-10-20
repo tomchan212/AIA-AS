@@ -67,7 +67,7 @@ export function ConsultantCTA({ locale, severe, summary, onConsent }: Consultant
       ) : null}
       {open ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-labelledby="share-title">
-          <div className="w-full max-w-md rounded-3xl bg-paper p-5 text-ink dark:bg-[#221c16] dark:text-paper">
+          <div className="dialog-pop w-full max-w-md rounded-3xl bg-paper p-5 text-ink dark:bg-[#221c16] dark:text-paper">
             <h2 id="share-title" className="text-xl font-semibold">{t(locale, "shareTitle")}</h2>
             <p className="mt-2 text-sm">{t(locale, "shareBody", { phone })}</p>
             <label className="mt-4 flex items-start gap-3">

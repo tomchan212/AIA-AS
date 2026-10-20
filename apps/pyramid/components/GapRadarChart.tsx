@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "framer-motion";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { t } from "@/lib/i18n";
 import type { Locale, RadarScores } from "@/types";
@@ -10,6 +11,7 @@ interface GapRadarChartProps {
 }
 
 export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
+  const reduce = useReducedMotion();
   const rows = [
     { subject: t(locale, "radarProtection"), score: radar.protection },
     { subject: t(locale, "radarSavings"), score: radar.savings },
@@ -25,7 +27,7 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
             <PolarGrid />
             <PolarAngleAxis dataKey="subject" tick={{ fill: "currentColor", fontSize: 12 }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-            <Radar dataKey="score" stroke="#1f7a4d" fill="#1f7a4d" fillOpacity={0.35} />
+            <Radar dataKey="score" stroke="#1f7a4d" fill="#1f7a4d" fillOpacity={0.35} isAnimationActive={!reduce} animationDuration={1100} animationEasing="ease-out" />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -33,7 +35,7 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
         <caption className="sr-only">{t(locale, "radar")}</caption>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.subject} className="border-t border-ink/10">
+            <tr key={row.subject} className="radar-row border-t border-ink/10">
               <th scope="row" className="py-2 text-left font-semibold">{row.subject}</th>
               <td className="py-2 text-right">{row.score}</td>
             </tr>
