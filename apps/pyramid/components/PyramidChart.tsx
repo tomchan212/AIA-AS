@@ -124,9 +124,9 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
           return (
             <motion.g
               key={`${mode}-${layer.id}`}
-              initial={reduce ? false : { opacity: 0, y: 28 }}
-              animate={live || reduce ? { opacity: mode === "ideal" ? 0.9 : 1, y: 0 } : { opacity: 0, y: 28 }}
-              transition={{ duration: 0.55, delay: (mode === "actual" ? 0.45 : 0) + fromBottom * 0.16, ease: [0.16, 0.84, 0.24, 1] }}
+              initial={reduce ? false : { opacity: 0, y: 36 }}
+              animate={live || reduce ? { opacity: mode === "ideal" ? 0.92 : 1, y: 0 } : { opacity: 0, y: 36 }}
+              transition={{ duration: 0.85, delay: (mode === "actual" ? 1.7 : 0) + fromBottom * 0.38, ease: [0.16, 0.84, 0.24, 1] }}
             >
               <path d={path.d} fill={fill}>
                 <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
