@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { PYRAMID_CONFIG } from "@/lib/config/pyramid";
 import { t } from "@/lib/i18n";
 import { advisorWhatsAppUrl } from "@/lib/whatsapp";
 import type { Locale } from "@/types";
@@ -21,7 +20,6 @@ export function ConsultantCTA({ locale, severe, summary, onConsent }: Consultant
   const [shown, setShown] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const phone = PYRAMID_CONFIG.advisorWhatsAppDisplay;
   const whatsappUrl = advisorWhatsAppUrl(`${t(locale, "whatsappIntro")}\n\n${summary}`);
 
   function confirm() {
@@ -45,7 +43,6 @@ export function ConsultantCTA({ locale, severe, summary, onConsent }: Consultant
   return (
     <section className="glass-card" aria-labelledby="cta-title">
       <h2 id="cta-title" className="text-lg font-semibold">{severe ? t(locale, "contactSevere") : t(locale, "contact")}</h2>
-      <p className="mt-1 text-sm text-ink/70 dark:text-paper/70">{t(locale, "contactHint", { phone })}</p>
       <motion.button
         type="button"
         className={`mt-4 h-14 w-full rounded-2xl text-base font-semibold text-white ${severe ? "bg-severe" : "bg-enough"}`}
@@ -69,10 +66,10 @@ export function ConsultantCTA({ locale, severe, summary, onConsent }: Consultant
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-labelledby="share-title">
           <div className="dialog-pop w-full max-w-md rounded-3xl bg-paper p-5 text-ink dark:bg-[#221c16] dark:text-paper">
             <h2 id="share-title" className="text-xl font-semibold">{t(locale, "shareTitle")}</h2>
-            <p className="mt-2 text-sm">{t(locale, "shareBody", { phone })}</p>
+            <p className="mt-2 text-sm">{t(locale, "shareBody")}</p>
             <label className="mt-4 flex items-start gap-3">
               <input type="checkbox" className="mt-1 h-5 w-5" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
-              <span>{t(locale, "shareConsent", { phone })}</span>
+              <span>{t(locale, "shareConsent")}</span>
             </label>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button type="button" className="h-12 rounded-2xl border border-ink/15 font-semibold" onClick={() => setOpen(false)}>{t(locale, "cancel")}</button>
