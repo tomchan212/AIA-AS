@@ -4,6 +4,7 @@ functions/.env
 apps/pyramid/node_modules/
 apps/pyramid/.next/
 apps/pyramid/out/
+apps/pyramid/tsconfig.tsbuildinfo
 .firebase/
 .DS_Store
 *.log
