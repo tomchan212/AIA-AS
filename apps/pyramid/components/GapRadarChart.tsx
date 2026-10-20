@@ -20,18 +20,14 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
     if (!node) return;
     const reveal = () => {
       const box = node.getBoundingClientRect();
-      const mid = window.innerHeight * 0.62;
-      if (box.top < mid && box.bottom > window.innerHeight * 0.22) setLive(true);
+      if (box.top < 180 && box.top > -80 && box.bottom > 220) setLive(true);
     };
     reveal();
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) setLive(true);
-    });
-    observer.observe(node);
     window.addEventListener("scroll", reveal, { passive: true });
+    window.addEventListener("resize", reveal);
     return () => {
-      observer.disconnect();
       window.removeEventListener("scroll", reveal);
+      window.removeEventListener("resize", reveal);
     };
   }, []);
   const rows = [
