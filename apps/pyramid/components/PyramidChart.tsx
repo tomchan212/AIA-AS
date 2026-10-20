@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { formatPercent, formatHkd } from "@/lib/format";
 import { layerLabel, statusLabel, t } from "@/lib/i18n";
 import type { LayerAssessment, Locale } from "@/types";
@@ -38,7 +39,43 @@ function stackBands(visual: number[], total: number) {
   });
 }
 
+function useCountUp(target: number, live: boolean) {
+  const reduce = useReducedMotion();
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!live || reduce) {
+      setValue(target);
+      return;
+    }
+    const start = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / 900);
+      const eased = 1 - (1 - progress) ** 3;
+      setValue(Math.round(target * eased));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, live, reduce]);
+  return value;
+}
+
+function LegendRow({ layer, locale, live }: { layer: LayerAssessment; locale: Locale; live: boolean }) {
+  const amount = useCountUp(layer.actualAmount, live);
+  return (
+    <li className="legend-row flex items-start justify-between gap-3 text-sm">
+      <span>
+        <span className="dot-live mr-2 inline-block h-3 w-3 rounded-full align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
+        {layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}
+      </span>
+      <span className="font-semibold">{formatHkd(amount, locale)} / {formatPercent(layer.actualShare, locale)}</span>
+    </li>
+  );
+}
+
 export function PyramidChart({ layers, locale }: PyramidChartProps) {
+  const reduce = useReducedMotion();
   const root = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState(false);
   useEffect(() => {
@@ -71,13 +108,26 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
   const column = (title: string, bands: { d: string; labelY: number; height: number }[], mode: "ideal" | "actual") => (
     <figure className="min-w-0 flex-1">
       <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
-      <svg viewBox="0 0 200 230" className={`mx-auto h-64 w-full max-w-[220px] ${mode === "ideal" ? "pyramid-soon" : "pyramid-late"}`} role="img" aria-label={`${title}. ${caption}`}>
+      <motion.svg
+        viewBox="0 0 200 230"
+        className="mx-auto h-64 w-full max-w-[220px]"
+        role="img"
+        aria-label={`${title}. ${caption}`}
+        animate={reduce ? undefined : { y: [0, -5, 0] }}
+        transition={reduce ? undefined : { delay: 1.6, duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+      >
         {order.map((layer, index) => {
           const path = bands[index];
           const fill = mode === "ideal" ? FILL.ideal : FILL[layer.status];
+          const fromBottom = order.length - 1 - index;
           return (
-            <g key={`${mode}-${layer.id}`} className="pyramid-band" style={{ ["--i" as string]: index }}>
-              <path d={path.d} fill={fill} opacity={mode === "ideal" ? 0.85 : 0.95}>
+            <motion.g
+              key={`${mode}-${layer.id}`}
+              initial={reduce ? false : { opacity: 0, y: 28 }}
+              animate={live || reduce ? { opacity: mode === "ideal" ? 0.9 : 1, y: 0 } : { opacity: 0, y: 28 }}
+              transition={{ duration: 0.55, delay: (mode === "actual" ? 0.45 : 0) + fromBottom * 0.16, ease: [0.16, 0.84, 0.24, 1] }}
+            >
+              <path d={path.d} fill={fill}>
                 <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
               </path>
               {path.height >= 22 ? (
@@ -85,10 +135,10 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
                   {formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}
                 </text>
               ) : null}
-            </g>
+            </motion.g>
           );
         })}
-      </svg>
+      </motion.svg>
     </figure>
   );
 
@@ -99,15 +149,7 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
         {column(t(locale, "actual"), actualBands, "actual")}
       </div>
       <ul className="mt-3 space-y-2">
-        {layers.map((layer) => (
-          <li key={layer.id} className="legend-row flex items-start justify-between gap-3 text-sm">
-            <span>
-              <span className="dot-live mr-2 inline-block h-3 w-3 rounded-full align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
-              {layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}
-            </span>
-            <span className="font-semibold">{formatHkd(layer.actualAmount, locale)} / {formatPercent(layer.actualShare, locale)}</span>
-          </li>
-        ))}
+        {layers.map((layer) => <LegendRow key={layer.id} layer={layer} locale={locale} live={live} />)}
       </ul>
     </div>
   );

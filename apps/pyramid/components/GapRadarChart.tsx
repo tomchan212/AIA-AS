@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { t } from "@/lib/i18n";
 import type { Locale, RadarScores } from "@/types";
@@ -42,16 +42,23 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
   ];
   return (
     <div>
-      <div ref={root} className="h-72" aria-hidden="true">
+      <motion.div
+        ref={root}
+        className="h-72"
+        aria-hidden="true"
+        initial={reduce ? false : { opacity: 0, scale: 0.86, rotate: -6 }}
+        animate={live || reduce ? { opacity: 1, scale: 1, rotate: 0 } : { opacity: 0, scale: 0.86, rotate: -6 }}
+        transition={{ type: "spring", stiffness: 140, damping: 16 }}
+      >
         {live ? <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={rows} outerRadius="70%">
             <PolarGrid />
             <PolarAngleAxis dataKey="subject" tick={{ fill: "currentColor", fontSize: 12 }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-            <Radar dataKey="score" stroke="#1f7a4d" fill="#1f7a4d" fillOpacity={0.35} isAnimationActive={!reduce} animationDuration={1100} animationEasing="ease-out" />
+            <Radar dataKey="score" stroke="#1f7a4d" fill="#1f7a4d" fillOpacity={0.45} isAnimationActive={!reduce} animationDuration={1600} animationEasing="ease-out" />
           </RadarChart>
         </ResponsiveContainer> : null}
-      </div>
+      </motion.div>
       <table className="mt-2 w-full text-sm">
         <caption className="sr-only">{t(locale, "radar")}</caption>
         <tbody>
