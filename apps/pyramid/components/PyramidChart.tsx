@@ -64,12 +64,12 @@ function useCountUp(target: number, live: boolean) {
 function LegendRow({ layer, locale, live }: { layer: LayerAssessment; locale: Locale; live: boolean }) {
   const amount = useCountUp(layer.actualAmount, live);
   return (
-    <li className="legend-row flex items-start justify-between gap-3 text-sm">
-      <span>
-        <span className="dot-live mr-2 inline-block h-3 w-3 rounded-full align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
+    <li className="legend-row grid grid-cols-1 gap-1 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-3">
+      <span className="min-w-0">
+        <span className="dot-live mr-2 align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
         {layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}
       </span>
-      <span className="font-semibold">{formatHkd(amount, locale)} / {formatPercent(layer.actualShare, locale)}</span>
+      <span className="font-semibold sm:text-right">{formatHkd(amount, locale)} / {formatPercent(layer.actualShare, locale)}</span>
     </li>
   );
 }
@@ -107,11 +107,9 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
       <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
       <motion.svg
         viewBox="0 0 200 230"
-        className="mx-auto h-64 w-full max-w-[220px]"
+        className="mx-auto block h-56 w-full max-w-[200px] overflow-hidden"
         role="img"
         aria-label={`${title}. ${caption}`}
-        animate={reduce ? undefined : { y: [0, -5, 0] }}
-        transition={reduce ? undefined : { delay: 1.6, duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
       >
         {order.map((layer, index) => {
           const path = bands[index];
@@ -120,18 +118,13 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
           return (
             <motion.g
               key={`${mode}-${layer.id}`}
-              initial={reduce ? false : { opacity: 0, y: 36 }}
-              animate={live || reduce ? { opacity: mode === "ideal" ? 0.92 : 1, y: 0 } : { opacity: 0, y: 36 }}
+              initial={reduce ? false : { opacity: 0 }}
+              animate={live || reduce ? { opacity: mode === "ideal" ? 0.92 : 1 } : { opacity: 0 }}
               transition={{ duration: 0.85, delay: (mode === "actual" ? 1.7 : 0) + fromBottom * 0.38, ease: [0.16, 0.84, 0.24, 1] }}
             >
               <path d={path.d} fill={fill}>
                 <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
               </path>
-              {path.height >= 22 ? (
-                <text x="100" y={path.labelY} textAnchor="middle" dominantBaseline="middle" fill="#fffaf3" fontSize="11" fontWeight="700">
-                  {formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}
-                </text>
-              ) : null}
             </motion.g>
           );
         })}

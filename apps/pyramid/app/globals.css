@@ -23,17 +23,18 @@ body {
 }
 
 .glass-card {
+  position: relative;
+  z-index: 1;
   border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 250, 244, 0.96);
   padding: 1.25rem;
   box-shadow: 0 12px 40px rgba(60, 36, 10, 0.08);
-  backdrop-filter: blur(16px);
 }
 
 .dark .glass-card {
   border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(24, 20, 16, 0.96);
   box-shadow: none;
 }
 
@@ -77,29 +78,29 @@ body {
 
 .disclaimer {
   border-radius: 1rem;
-  background: rgba(180, 35, 24, 0.08);
+  background: #f8e7e3;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 700;
   animation: rise 0.5s ease both;
 }
 
-.blob { position: fixed; z-index: 0; border-radius: 999px; pointer-events: none; filter: blur(2px); }
-.blob-a { width: 10rem; height: 10rem; background: #ffe08a; top: 3rem; right: -2.5rem; animation: floaty 7s ease-in-out infinite; }
-.blob-b { width: 8rem; height: 8rem; background: #f3c7b0; top: 22rem; left: -2.5rem; animation: floaty 8s ease-in-out infinite reverse; }
-.blob-c { width: 6rem; height: 6rem; background: #b7d8c6; bottom: 4rem; right: 12%; animation: floaty 6.5s ease-in-out infinite; }
-.dark .blob { opacity: 0.35; }
+.blob { position: fixed; z-index: 0; border-radius: 999px; pointer-events: none; opacity: 0.45; }
+.blob-a { width: 9rem; height: 9rem; background: #ffe08a; top: -3rem; right: -3.5rem; animation: floaty 7s ease-in-out infinite; }
+.blob-b { width: 8rem; height: 8rem; background: #f3c7b0; top: 46%; left: -4rem; animation: floaty 8s ease-in-out infinite reverse; }
+.blob-c { width: 7rem; height: 7rem; background: #b7d8c6; bottom: -3rem; right: -3rem; animation: floaty 6.5s ease-in-out infinite; }
+.dark .blob { opacity: 0.22; }
 main { position: relative; z-index: 1; }
+header, .disclaimer, #step-panel { position: relative; z-index: 1; }
 
 .title-mark {
   display: inline-block;
-  width: 1.15rem;
-  height: 1rem;
-  margin-right: 0.45rem;
-  vertical-align: -0.05rem;
+  width: 0.9rem;
+  height: 0.8rem;
+  margin-right: 0;
+  vertical-align: 0;
   background: linear-gradient(#b42318 0 25%, #9a6700 25% 55%, #1f7a4d 55% 100%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  animation: bob 2.4s ease-in-out infinite;
 }
 
 .progress-fill { position: relative; overflow: hidden; }
@@ -138,11 +139,18 @@ button[type="submit"]::after {
 }
 .pyramid-live .pyramid-late .pyramid-band { animation-delay: calc(0.35s + var(--i) * 0.12s); animation-play-state: running; }
 .pyramid-live .pyramid-soon .pyramid-band { animation-delay: calc(var(--i) * 0.12s); animation-play-state: running; }
-.dot-live { animation: pulse 1.8s ease-in-out infinite; }
+.dot-live {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+  border-radius: 999px;
+  animation: dot-fade 1.8s ease-in-out infinite;
+}
 .score-ring { transform: rotate(-90deg); transform-origin: 50% 50%; }
 .score-pop { animation: pop 0.55s ease both; }
 
-.confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.confetti { position: absolute; top: 0; right: 0; left: 0; z-index: 0; height: 1.1rem; overflow: hidden; pointer-events: none; }
 .confetti i {
   position: absolute;
   top: -0.4rem;
@@ -169,7 +177,8 @@ button[type="submit"]::after {
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 @keyframes pop { 0% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
 @keyframes pop-center { from { transform: scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes confetti { from { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(7rem) rotate(80deg); opacity: 0; } }
+@keyframes confetti { from { transform: translateY(0) rotate(0); opacity: 0.9; } to { transform: translateY(0.8rem) rotate(40deg); opacity: 0; } }
+@keyframes dot-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 .sr-only {
   position: absolute;

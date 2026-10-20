@@ -45,20 +45,20 @@ export function ScoreCard({ score, locale, priorities }: ScoreCardProps) {
           {Array.from({ length: 16 }, (_, index) => <i key={index} style={{ ["--i" as string]: index }} />)}
         </div>
       )}
-      <h2 id="score-title" className="text-lg font-semibold">{t(locale, "score")}</h2>
-      <div className="score-pop mt-2 flex items-center gap-4">
-        <svg viewBox="0 0 120 120" className="h-28 w-28" aria-hidden="true">
+      <h2 id="score-title" className="relative z-10 text-lg font-semibold">{t(locale, "score")}</h2>
+      <div className="score-pop relative z-10 mt-2 flex flex-wrap items-center gap-4">
+        <svg viewBox="0 0 120 120" className="h-24 w-24 shrink-0" aria-hidden="true">
           <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(28,25,21,0.12)" strokeWidth="10" />
           <circle className="score-ring" cx="60" cy="60" r={radius} fill="none" stroke={tone} strokeWidth="10" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
         </svg>
         <p className="text-6xl font-bold tracking-tight" aria-live="polite">{shown}</p>
       </div>
-      <p className="text-sm text-ink/70 dark:text-paper/70">0–100</p>
-      <h3 className="mt-5 text-base font-semibold">{t(locale, "priorities")}</h3>
+      <p className="relative z-10 text-sm text-ink/70 dark:text-paper/70">0–100</p>
+      <h3 className="relative z-10 mt-5 text-base font-semibold">{t(locale, "priorities")}</h3>
       {priorities.length ? (
         <ol className="mt-2 space-y-3">
           {priorities.map((item, index) => (
-            <li key={item.id} className="priority-card rounded-2xl bg-white/60 p-3 dark:bg-white/5">
+            <li key={item.id} className="priority-card relative z-10 rounded-2xl bg-white p-3 dark:bg-white/10">
               <p className="font-semibold">{index + 1}. {layerLabel(locale, item.layer)} · {statusLabel(locale, item.status)}</p>
               <p className="mt-1 text-sm">{reasonAction(locale, item.reason)}</p>
             </li>

@@ -79,15 +79,15 @@ export function Wizard() {
       <div className="blob blob-b no-print" aria-hidden="true" />
       <div className="blob blob-c no-print" aria-hidden="true" />
       <a className="sr-only focus:not-sr-only" href="#step-panel">{t(locale, "title")}</a>
-      <header className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold"><span className="title-mark" aria-hidden="true" />{t(locale, "title")}</h1>
-          <p className="mt-1 text-sm text-ink/70 dark:text-paper/70">{t(locale, "lead")}</p>
-        </div>
-        <div className="flex gap-2">
+      <header className="mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="flex min-w-0 items-center gap-2 whitespace-nowrap text-2xl font-bold leading-tight sm:text-3xl"><span className="title-mark shrink-0" aria-hidden="true" />{t(locale, "title")}</h1>
+          <div className="flex shrink-0 gap-2">
           <button type="button" className="tool" onClick={() => state.setLocale(locale === "zh-HK" ? "en" : "zh-HK")}>{t(locale, "lang")}</button>
           <button type="button" className="tool" onClick={() => state.setTheme(state.theme === "dark" ? "light" : "dark")}>{state.theme === "dark" ? t(locale, "themeLight") : t(locale, "theme")}</button>
+          </div>
         </div>
+        <p className="mt-2 text-sm text-ink/70 dark:text-paper/70">{t(locale, "lead")}</p>
       </header>
       <p className="disclaimer">{t(locale, "disclaimer")}</p>
       <div className="my-4 h-2 overflow-hidden rounded-full bg-ink/10" aria-hidden="true">
