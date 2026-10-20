@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { t } from "@/lib/i18n";
@@ -12,6 +13,26 @@ interface GapRadarChartProps {
 
 export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
   const reduce = useReducedMotion();
+  const root = useRef<HTMLDivElement>(null);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    const reveal = () => {
+      const box = node.getBoundingClientRect();
+      if (box.top < window.innerHeight * 0.92 && box.bottom > 40) setLive(true);
+    };
+    reveal();
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) setLive(true);
+    });
+    observer.observe(node);
+    window.addEventListener("scroll", reveal, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", reveal);
+    };
+  }, []);
   const rows = [
     { subject: t(locale, "radarProtection"), score: radar.protection },
     { subject: t(locale, "radarSavings"), score: radar.savings },
@@ -21,15 +42,15 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
   ];
   return (
     <div>
-      <div className="h-72" aria-hidden="true">
-        <ResponsiveContainer width="100%" height="100%">
+      <div ref={root} className="h-72" aria-hidden="true">
+        {live ? <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={rows} outerRadius="70%">
             <PolarGrid />
             <PolarAngleAxis dataKey="subject" tick={{ fill: "currentColor", fontSize: 12 }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
             <Radar dataKey="score" stroke="#1f7a4d" fill="#1f7a4d" fillOpacity={0.35} isAnimationActive={!reduce} animationDuration={1100} animationEasing="ease-out" />
           </RadarChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> : null}
       </div>
       <table className="mt-2 w-full text-sm">
         <caption className="sr-only">{t(locale, "radar")}</caption>

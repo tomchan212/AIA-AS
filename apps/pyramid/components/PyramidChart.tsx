@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { formatPercent, formatHkd } from "@/lib/format";
 import { layerLabel, statusLabel, t } from "@/lib/i18n";
 import type { LayerAssessment, Locale } from "@/types";
@@ -38,6 +39,26 @@ function stackBands(visual: number[], total: number) {
 }
 
 export function PyramidChart({ layers, locale }: PyramidChartProps) {
+  const root = useRef<HTMLDivElement>(null);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    const reveal = () => {
+      const box = node.getBoundingClientRect();
+      if (box.top < window.innerHeight * 0.92 && box.bottom > 40) setLive(true);
+    };
+    reveal();
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) setLive(true);
+    });
+    observer.observe(node);
+    window.addEventListener("scroll", reveal, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", reveal);
+    };
+  }, []);
   const order = [...layers].reverse();
   const idealVisual = order.map((layer) => Math.max(layer.idealShare, 0.08));
   const actualVisual = order.map((layer) => Math.max(layer.actualShare, 0.08));
@@ -72,7 +93,7 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
   );
 
   return (
-    <div>
+    <div ref={root} className={live ? "pyramid-live" : ""}>
       <div className="flex gap-3">
         {column(t(locale, "ideal"), idealBands, "ideal")}
         {column(t(locale, "actual"), actualBands, "actual")}

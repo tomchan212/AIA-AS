@@ -134,9 +134,10 @@ button[type="submit"]::after {
   transform-box: fill-box;
   transform-origin: 50% 100%;
   animation: band-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-play-state: paused;
 }
-.pyramid-late .pyramid-band { animation-delay: calc(0.35s + var(--i) * 0.12s); }
-.pyramid-soon .pyramid-band { animation-delay: calc(var(--i) * 0.12s); }
+.pyramid-live .pyramid-late .pyramid-band { animation-delay: calc(0.35s + var(--i) * 0.12s); animation-play-state: running; }
+.pyramid-live .pyramid-soon .pyramid-band { animation-delay: calc(var(--i) * 0.12s); animation-play-state: running; }
 .dot-live { animation: pulse 1.8s ease-in-out infinite; }
 .score-ring { transform: rotate(-90deg); transform-origin: 50% 50%; }
 .score-pop { animation: pop 0.55s ease both; }
