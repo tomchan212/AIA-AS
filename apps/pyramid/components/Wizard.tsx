@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -11,10 +11,11 @@ import { StepInput } from "@/components/StepInput";
 import { analyzePyramid } from "@/lib/analysis/analyze";
 import { scoreRisk } from "@/lib/analysis/risk";
 import { profileLabel, t } from "@/lib/i18n";
+import { shouldConfirmSampleReplace } from "@/lib/sampleGuard";
 import { SAMPLE_RANKS } from "@/lib/samples";
 import { ageSchema, amountSchema, cashflowSchema, choiceSchema, countSchema, lifeSchema, medicalAmountSchema, riskSchema, speculativeSchema } from "@/lib/schema";
 import { STEP_IDS, persistDraft, usePyramidStore } from "@/lib/store";
-import type { PyramidAnswers } from "@/types";
+import type { PyramidAnswers, RiskProfile } from "@/types";
 
 const RISK = [
   ["q1", ["q1a", "q1b", "q1c", "q1d"]],
@@ -54,6 +55,10 @@ export function Wizard() {
   const state = usePyramidStore();
   const [consentTick, setConsentTick] = useState(false);
   const [consentError, setConsentError] = useState(false);
+  const [pendingRank, setPendingRank] = useState<RiskProfile | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
   const stepId = STEP_IDS[state.step] ?? "consent";
   const locale = state.locale;
 
@@ -73,6 +78,53 @@ export function Wizard() {
   }, [state]);
 
   const report = useMemo(() => (stepId === "result" ? analyzePyramid(answersFromState()) : null), [stepId, state]);
+
+  useEffect(() => {
+    if (!pendingRank) return;
+    dialogRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setPendingRank(null);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = [cancelRef.current, confirmRef.current].filter((node): node is HTMLButtonElement => Boolean(node));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || active === dialogRef.current) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pendingRank]);
+
+  function applySample(rank: RiskProfile) {
+    setPendingRank(null);
+    state.loadSample(rank);
+    window.setTimeout(() => {
+      document.getElementById("chart-title")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }, 50);
+  }
+
+  function requestSample(rank: RiskProfile) {
+    const current = usePyramidStore.getState();
+    const unsavedNumber = current.consent && !current.sample && Array.from(document.querySelectorAll<HTMLInputElement>("input.field")).some((field) => field.value.trim() !== "");
+    if (shouldConfirmSampleReplace(current) || unsavedNumber) {
+      setPendingRank(rank);
+      return;
+    }
+    applySample(rank);
+  }
 
   if (!state.ready) return <p className="p-6">{t(locale, "loading")}</p>;
 
@@ -145,12 +197,7 @@ export function Wizard() {
                   type="button"
                   className={selected ? "tool tool-on" : "tool"}
                   aria-pressed={selected}
-                  onClick={() => {
-                    state.loadSample(rank);
-                    window.setTimeout(() => {
-                      document.getElementById("chart-title")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-                    }, 50);
-                  }}
+                  onClick={() => requestSample(rank)}
                 >
                   {profileLabel(locale, rank)}
                 </button>
@@ -162,6 +209,27 @@ export function Wizard() {
       </div>
       {state.consent ? <p className="no-print mt-3 text-xs text-ink/60 dark:text-paper/60">{t(locale, "saved")}</p> : null}
       {stepId === "result" ? <p className="no-print mt-1 text-xs text-ink/60 dark:text-paper/60">{t(locale, "reportHint")}</p> : null}
+      {pendingRank ? (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4" onMouseDown={() => setPendingRank(null)}>
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sample-replace-title"
+            aria-describedby="sample-replace-body"
+            tabIndex={-1}
+            className="dialog-pop w-full max-w-md rounded-3xl bg-paper p-5 text-ink outline-none dark:bg-[#221c16] dark:text-paper"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <h2 id="sample-replace-title" className="text-xl font-semibold">{t(locale, "sampleReplaceTitle")}</h2>
+            <p id="sample-replace-body" className="mt-2 text-sm">{t(locale, "sampleReplaceBody")}</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button ref={cancelRef} id="sample-replace-cancel" type="button" className="h-12 rounded-2xl border border-ink/15 font-semibold" onClick={() => setPendingRank(null)}>{t(locale, "cancel")}</button>
+              <button ref={confirmRef} id="sample-replace-confirm" type="button" className="h-12 rounded-2xl bg-ink font-semibold text-paper" onClick={() => applySample(pendingRank)}>{t(locale, "sampleReplaceConfirm")}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
