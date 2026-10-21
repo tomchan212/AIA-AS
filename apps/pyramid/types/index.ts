@@ -45,6 +45,12 @@ export interface PyramidAnswers {
   liabilities: number;
   riskAnswers: number[];
   mode: InputMode;
+  incomeStability?: "steady" | "variable" | null;
+}
+
+export interface ScorePoint {
+  at: string;
+  score: number;
 }
 
 export interface LayerAssessment {
@@ -117,4 +123,6 @@ export interface PyramidDraft {
   speculative: number | null;
   liabilities: number | null;
   riskAnswers: number[];
+  incomeStability: "steady" | "variable" | null;
+  history: ScorePoint[];
 }

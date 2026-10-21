@@ -20,7 +20,7 @@ export const PYRAMID_CONFIG = {
   /** Used only to build the WhatsApp link. Do not render this on the page. */
   advisorWhatsApp: "85294729476",
   age: { min: 18, max: 100, pivot: 40 },
-  emergencyMonths: { single: 3, withDependants: 6, partialRatio: 0.5 },
+  emergencyMonths: { single: 3, withDependants: 6, partialRatio: 0.5, variableExtra: 3, variableCap: 12 },
   lifeIncomeMultiplier: 10,
   lifeDependantExtra: 1,
   lifeMultiplierCap: 15,

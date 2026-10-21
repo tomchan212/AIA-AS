@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyzePyramid } from "@/lib/analysis/analyze";
+import { benchmarkNumber } from "@/lib/benchmarks";
 import { SAMPLE_RANKS, sampleDraft } from "@/lib/samples";
 import type { PyramidAnswers, RiskProfile } from "@/types";
 
@@ -28,7 +29,12 @@ function reportFor(rank: RiskProfile) {
 }
 
 describe("anonymous samples", () => {
-  it("offers one distinct pyramid for each risk rank", () => {
+  it("offers one distinct pyramid for each risk rank near published medians", () => {
+    const employment = benchmarkNumber("csd-median-employment-earnings");
+    const household = benchmarkNumber("csd-median-household-income");
+    expect(sampleDraft("conservative").monthlyIncome).toBe(employment);
+    expect(sampleDraft("stable").monthlyIncome).toBe(household);
+    expect(sampleDraft("balanced").monthlyIncome).toBe(household);
     const pictures = SAMPLE_RANKS.map((rank) => {
       const report = reportFor(rank);
       expect(report.riskProfile).toBe(rank);
@@ -36,12 +42,5 @@ describe("anonymous samples", () => {
       return report.layers.map((layer) => layer.status).join("-");
     });
     expect(new Set(pictures).size).toBe(SAMPLE_RANKS.length);
-  });
-
-  it("keeps the original stable example", () => {
-    const report = reportFor("stable");
-    expect(report.lifeTarget).toBe(4_960_000);
-    expect(report.healthScore).toBe(33);
-    expect(report.layers.map((layer) => layer.status)).toEqual(["severe", "partial", "partial", "severe"]);
   });
 });

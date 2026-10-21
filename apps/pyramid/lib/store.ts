@@ -50,6 +50,8 @@ export function emptyDraft(): PyramidDraft {
     speculative: null,
     liabilities: null,
     riskAnswers: [0, 0, 0, 0, 0, 0],
+    incomeStability: null,
+    history: [],
   };
 }
 
@@ -98,9 +100,11 @@ export const usePyramidStore = create<PyramidState>((set, get) => ({
     set({ ...emptyDraft(), locale, theme, ready: true });
   },
   loadSample(rank: RiskProfile = "stable") {
+    const history = get().history ?? [];
     set({
       ...emptyDraft(),
       ...sampleDraft(rank),
+      history,
       consent: true,
       ready: true,
       sample: true,

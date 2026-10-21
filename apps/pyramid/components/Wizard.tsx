@@ -45,6 +45,7 @@ function answersFromState(): PyramidAnswers {
     liabilities: state.liabilities ?? 0,
     riskAnswers: state.riskAnswers,
     mode: state.mode,
+    incomeStability: state.incomeStability,
   };
 }
 

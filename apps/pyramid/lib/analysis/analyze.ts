@@ -79,7 +79,10 @@ export function analyzePyramid(input: PyramidAnswers, config: PyramidConfig = PY
 
   const annualIncome = fields.monthlyIncome.value * 12;
   const expense = fields.monthlyExpense.value;
-  const emergencyTargetMonths = dependants > 0 ? config.emergencyMonths.withDependants : config.emergencyMonths.single;
+  const baseEmergencyMonths = dependants > 0 ? config.emergencyMonths.withDependants : config.emergencyMonths.single;
+  const emergencyTargetMonths = input.incomeStability === "variable"
+    ? Math.min(config.emergencyMonths.variableCap, baseEmergencyMonths + config.emergencyMonths.variableExtra)
+    : baseEmergencyMonths;
   const emergencyMonths = expense > 0 ? fields.emergencyCash.value / expense : null;
 
   const risk = scoreRisk(input.riskAnswers, config);
