@@ -1,8 +1,9 @@
 "use client";
 
 import { create } from "zustand";
+import { sampleDraft } from "@/lib/samples";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/storage";
-import type { InputMode, Locale, PyramidDraft, ThemeMode } from "@/types";
+import type { InputMode, Locale, PyramidDraft, RiskProfile, ThemeMode } from "@/types";
 
 export const STEP_IDS = [
   "consent",
@@ -61,7 +62,7 @@ interface PyramidState extends PyramidDraft {
   setMode: (mode: InputMode) => void;
   go: (step: number) => void;
   reset: () => Promise<void>;
-  loadSample: () => void;
+  loadSample: (rank?: RiskProfile) => void;
 }
 
 export const usePyramidStore = create<PyramidState>((set, get) => ({
@@ -96,30 +97,15 @@ export const usePyramidStore = create<PyramidState>((set, get) => ({
     const { locale, theme } = get();
     set({ ...emptyDraft(), locale, theme, ready: true });
   },
-  loadSample() {
+  loadSample(rank: RiskProfile = "stable") {
     set({
       ...emptyDraft(),
+      ...sampleDraft(rank),
       consent: true,
       ready: true,
       sample: true,
       mode: "pro",
       step: STEP_IDS.indexOf("result"),
-      age: 35,
-      occupation: "",
-      dependants: 1,
-      monthlyIncome: 30_000,
-      monthlyExpense: 20_000,
-      emergencyCash: 20_000,
-      lifeCover: 300_000,
-      criticalIllnessCover: 0,
-      medicalAnnualLimit: 200_000,
-      hasMedical: true,
-      accidentCover: 0,
-      stableSavings: 80_000,
-      growthInvestments: 40_000,
-      speculative: 90_000,
-      liabilities: 1_000_000,
-      riskAnswers: [2, 2, 3, 2, 3, 2],
     });
   },
 }));

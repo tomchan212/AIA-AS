@@ -9,7 +9,9 @@ import { Art } from "@/components/Art";
 import { ResultView } from "@/components/ResultView";
 import { StepInput } from "@/components/StepInput";
 import { analyzePyramid } from "@/lib/analysis/analyze";
-import { t } from "@/lib/i18n";
+import { scoreRisk } from "@/lib/analysis/risk";
+import { profileLabel, t } from "@/lib/i18n";
+import { SAMPLE_RANKS } from "@/lib/samples";
 import { ageSchema, amountSchema, cashflowSchema, choiceSchema, countSchema, lifeSchema, medicalAmountSchema, riskSchema, speculativeSchema } from "@/lib/schema";
 import { STEP_IDS, persistDraft, usePyramidStore } from "@/lib/store";
 import type { PyramidAnswers } from "@/types";
@@ -96,7 +98,7 @@ export function Wizard() {
         <motion.div className="progress-fill h-full bg-enough" initial={false} animate={{ width: progress }} transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 90, damping: 18 }} />
       </div>
       <p className="mb-3 text-sm font-semibold">{t(locale, "step", { n: state.step + 1, total: STEP_IDS.length })}</p>
-      {state.sample ? <p className="mb-3 rounded-2xl bg-gold/15 px-3 py-2 text-sm font-semibold">{t(locale, "sampleOn")}</p> : null}
+      {state.sample ? <p className="mb-3 rounded-2xl bg-gold/15 px-3 py-2 text-sm font-semibold">{t(locale, "sampleOn", { rank: profileLabel(locale, scoreRisk(state.riskAnswers).profile) })}</p> : null}
       <AnimatePresence mode="wait">
         <motion.div
           id="step-panel"
@@ -125,11 +127,37 @@ export function Wizard() {
           {stepId === "result" && report ? <ResultView locale={locale} report={report} answers={answersFromState()} onShare={() => state.patch({ shareConsent: true, sample: state.sample })} /> : null}
         </motion.div>
       </AnimatePresence>
-      <div className="no-print mt-6 flex flex-wrap gap-2">
-        {state.step > 0 ? <button type="button" className="tool" onClick={() => state.go(state.step - 1)}>{t(locale, "back")}</button> : null}
-        <button type="button" className="tool" onClick={() => state.loadSample()}>{t(locale, "sample")}</button>
-        <button type="button" className="tool" onClick={() => { void state.reset(); setConsentTick(false); }}>{t(locale, "clear")}</button>
-        {stepId === "result" ? <button type="button" className="tool" onClick={() => window.print()}>{t(locale, "report")}</button> : null}
+      <div className="no-print mt-6 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {state.step > 0 ? <button type="button" className="tool" onClick={() => state.go(state.step - 1)}>{t(locale, "back")}</button> : null}
+          <button type="button" className="tool" onClick={() => { void state.reset(); setConsentTick(false); }}>{t(locale, "clear")}</button>
+          {stepId === "result" ? <button type="button" className="tool" onClick={() => window.print()}>{t(locale, "report")}</button> : null}
+        </div>
+        <div>
+          <p id="sample-label" className="mb-2 text-sm font-semibold">{t(locale, "sample")}</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-labelledby="sample-label">
+            {SAMPLE_RANKS.map((rank) => {
+              const selected = state.sample && scoreRisk(state.riskAnswers).profile === rank;
+              return (
+                <button
+                  key={rank}
+                  type="button"
+                  className={selected ? "tool tool-on" : "tool"}
+                  aria-pressed={selected}
+                  onClick={() => {
+                    state.loadSample(rank);
+                    window.setTimeout(() => {
+                      document.getElementById("chart-title")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+                    }, 50);
+                  }}
+                >
+                  {profileLabel(locale, rank)}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-ink/60 dark:text-paper/60">{t(locale, "samplePick")}</p>
+        </div>
       </div>
       {state.consent ? <p className="no-print mt-3 text-xs text-ink/60 dark:text-paper/60">{t(locale, "saved")}</p> : null}
       {stepId === "result" ? <p className="no-print mt-1 text-xs text-ink/60 dark:text-paper/60">{t(locale, "reportHint")}</p> : null}

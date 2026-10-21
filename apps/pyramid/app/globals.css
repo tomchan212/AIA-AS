@@ -75,6 +75,8 @@ body {
 }
 
 .dark .tool { background: rgba(255, 255, 255, 0.06); }
+.tool-on { background: #1f7a4d; color: #fffaf4; border-color: transparent; }
+.dark .tool-on { background: #3aaa6d; color: #1c1915; }
 
 .agent-note {
   margin-bottom: 1rem;
