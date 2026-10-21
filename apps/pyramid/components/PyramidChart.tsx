@@ -12,6 +12,7 @@ const ART = { protection: "base", stable: "stable", growth: "growth", speculativ
 interface PyramidChartProps {
   layers: LayerAssessment[];
   locale: Locale;
+  forceLive?: boolean;
 }
 
 function pieceSrc(status: GapStatus | "ideal", id: LayerId) {
@@ -44,9 +45,10 @@ function LegendRow({ layer, locale, live }: { layer: LayerAssessment; locale: Lo
   const amount = useCountUp(layer.actualAmount, live);
   return (
     <li className="legend-row grid grid-cols-1 gap-1 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-3">
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="flex min-w-0 flex-wrap items-center gap-2">
         <Art name={ART[layer.id]} className="art-row" />
-        <span>{layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}</span>
+        <span>{layerLabel(locale, layer.id)}</span>
+        <span className={`status-chip status-${layer.status}`}>{statusLabel(locale, layer.status)}</span>
       </span>
       <span className="font-semibold sm:text-right">{formatHkd(amount, locale)} / {formatPercent(layer.actualShare, locale)}</span>
     </li>
@@ -80,11 +82,15 @@ function PyramidFigure({
   );
 }
 
-export function PyramidChart({ layers, locale }: PyramidChartProps) {
+export function PyramidChart({ layers, locale, forceLive = false }: PyramidChartProps) {
   const reduce = useReducedMotion();
   const root = useRef<HTMLDivElement>(null);
-  const [live, setLive] = useState(false);
+  const [live, setLive] = useState(forceLive);
   useEffect(() => {
+    if (forceLive) {
+      setLive(true);
+      return;
+    }
     const node = root.current;
     if (!node) return;
     const reveal = () => {
@@ -99,7 +105,7 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
       window.removeEventListener("scroll", reveal);
       window.removeEventListener("resize", reveal);
     };
-  }, []);
+  }, [forceLive]);
 
   return (
     <div ref={root} className={live ? "pyramid-live" : ""}>

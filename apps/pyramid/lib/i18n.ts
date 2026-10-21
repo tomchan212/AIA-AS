@@ -1,6 +1,7 @@
 import type { GapStatus, LayerId, Locale, ReasonCode, RiskProfile } from "@/types";
+import { enUpgrade, zhUpgrade } from "@/lib/i18n-upgrade";
 
-const zh = {
+const zhBase = {
   title: "理財金字塔",
   lead: "我會好似顧問咁，一步步話你知金字塔每一層要留意咩。",
   agentKicker: "顧問話你知",
@@ -179,7 +180,9 @@ const zh = {
   action_no_assets: "未有資產金額，配置比例暫時未能比較。",
 };
 
-const en: Record<keyof typeof zh, string> = {
+const zh = { ...zhBase, ...zhUpgrade };
+
+const enBase: Record<keyof typeof zhBase, string> = {
   title: "Money pyramid",
   lead: "I will walk you through each layer the way an adviser would, and tell you what to notice.",
   agentKicker: "What to know",
@@ -357,6 +360,12 @@ const en: Record<keyof typeof zh, string> = {
   action_age_clamped: "Age was brought inside 18 to 100 before calculating.",
   action_no_assets: "No asset amounts were entered, so the mix cannot be compared yet.",
 };
+
+const enMerged = { ...enBase, ...enUpgrade };
+const en: Record<keyof typeof zh, string> = enMerged;
+
+void ({ ...enMerged } satisfies Record<keyof typeof zh, string>);
+void ({ ...zh } satisfies Record<keyof typeof enMerged, string>);
 
 export type MessageKey = keyof typeof zh;
 

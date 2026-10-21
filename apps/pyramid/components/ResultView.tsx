@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Art } from "@/components/Art";
 import { ConsultantCTA } from "@/components/ConsultantCTA";
+import { Insights } from "@/components/Insights";
 import { PyramidChart } from "@/components/PyramidChart";
 import { ScoreCard } from "@/components/ScoreCard";
 import { formatHkd, formatPercent } from "@/lib/format";
@@ -73,8 +74,10 @@ export function ResultView({ locale, report, answers, onShare }: ResultViewProps
         <h2 id="radar-title" className="text-lg font-semibold">{t(locale, "radar")}</h2>
         <GapRadarChart radar={report.radar} locale={locale} />
       </section>
+      <Insights locale={locale} report={report} answers={answers} />
       <ConsultantCTA locale={locale} severe={severe} summary={summary} onConsent={onShare} />
       <p className="text-sm">{t(locale, "disclaimer")}</p>
+      <footer className="print-footer">{t(locale, "printDisclaimer")}</footer>
     </div>
   );
 }

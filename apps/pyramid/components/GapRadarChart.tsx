@@ -21,8 +21,9 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
   ];
   return (
     <div>
+      <div className="h-64 overflow-hidden" role="img" aria-label={t(locale, "radar")}>
       <motion.div
-        className="h-64 overflow-hidden"
+        className="h-full"
         aria-hidden="true"
         initial={reduce ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -37,6 +38,7 @@ export function GapRadarChart({ radar, locale }: GapRadarChartProps) {
           </RadarChart>
         </ResponsiveContainer>
       </motion.div>
+      </div>
       <table className="mt-2 w-full text-sm">
         <caption className="sr-only">{t(locale, "radar")}</caption>
         <tbody>

@@ -78,6 +78,33 @@ body {
 .tool-on { background: #1f7a4d; color: #fffaf4; border-color: transparent; }
 .dark .tool-on { background: #3aaa6d; color: #1c1915; }
 
+.status-chip {
+  display: inline-block;
+  border-width: 2px;
+  border-color: currentColor;
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.status-enough { border-style: solid; }
+.status-partial { border-style: dashed; }
+.status-severe { border-style: dotted; }
+
+.sources-drawer > summary {
+  cursor: pointer;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.sources-drawer > summary:focus-visible {
+  outline: 3px solid #1f7a4d;
+  outline-offset: 3px;
+}
+.dark .sources-drawer > summary:focus-visible { outline-color: #3aaa6d; }
+
+.print-formulas, .print-footer { display: none; }
+
 .agent-note {
   margin-bottom: 1rem;
   border-radius: 1rem;
@@ -242,9 +269,25 @@ button[type="submit"]::after {
 
 @media print {
   .no-print, .blob, .confetti { display: none !important; }
-  body { background: white; color: black; }
-  .glass-card { box-shadow: none; background: white; animation: none; }
-  .pyramid-piece { opacity: 1 !important; animation: none !important; }
+  body, .dark, .dark body { background: white !important; color: black !important; }
+  .glass-card { box-shadow: none; background: white; animation: none; color: black; }
+  .pyramid-piece, .pyramid-settled { opacity: 1 !important; animation: none !important; }
+  .print-formulas { display: block; margin-top: 1.5rem; }
+  .print-footer {
+    display: block;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 8px 16px;
+    border-top: 1px solid #111;
+    background: white;
+    color: black;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  main { padding-bottom: 52px; }
+  details:not([open]) > :not(summary) { display: block !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
