@@ -91,6 +91,10 @@ body {
 }
 .dark .agent-note { background: #2a241c; border-color: rgba(255, 255, 255, 0.12); }
 .dark .agent-kicker { color: #e6c98a; }
+.art-spot { display: block; width: 4.75rem; height: 4.75rem; object-fit: contain; margin: 0 0 0.75rem; }
+.art-inline { width: 2.75rem; height: 2.75rem; flex: none; object-fit: contain; }
+.art-hero { display: block; width: 7.5rem; height: 7.5rem; object-fit: contain; margin: 0 auto 0.75rem; }
+.art-row { width: 2.25rem; height: 2.25rem; flex: none; object-fit: contain; }
 
 .disclaimer {
   border-radius: 1rem;

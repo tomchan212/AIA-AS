@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Art } from "@/components/Art";
 import { ConsultantCTA } from "@/components/ConsultantCTA";
 import { PyramidChart } from "@/components/PyramidChart";
 import { ScoreCard } from "@/components/ScoreCard";
@@ -48,6 +49,7 @@ export function ResultView({ locale, report, answers, onShare }: ResultViewProps
   return (
     <div id="pyramid-report" className="space-y-4">
       <section className="glass-card" aria-labelledby="know-title">
+        <Art name="guide" className="art-hero" alt="" />
         <p className="agent-kicker">{t(locale, "agentKicker")}</p>
         <h2 id="know-title" className="text-xl font-semibold">{t(locale, "knowTitle")}</h2>
         <ol className="mt-3 space-y-3">

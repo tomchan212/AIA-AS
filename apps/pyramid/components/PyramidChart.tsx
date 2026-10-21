@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
+import { Art } from "@/components/Art";
 import { formatPercent, formatHkd } from "@/lib/format";
 import { layerLabel, statusLabel, t } from "@/lib/i18n";
 import type { LayerAssessment, Locale } from "@/types";
+
+const ART = { protection: "base", stable: "stable", growth: "growth", speculative: "top" } as const;
 
 const FILL = {
   enough: "#1f7a4d",
@@ -65,9 +68,9 @@ function LegendRow({ layer, locale, live }: { layer: LayerAssessment; locale: Lo
   const amount = useCountUp(layer.actualAmount, live);
   return (
     <li className="legend-row grid grid-cols-1 gap-1 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-3">
-      <span className="min-w-0">
-        <span className="dot-live mr-2 align-middle" style={{ background: FILL[layer.status] }} aria-hidden="true" />
-        {layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}
+      <span className="flex min-w-0 items-center gap-2">
+        <Art name={ART[layer.id]} className="art-row" />
+        <span>{layerLabel(locale, layer.id)} · {statusLabel(locale, layer.status)}</span>
       </span>
       <span className="font-semibold sm:text-right">{formatHkd(amount, locale)} / {formatPercent(layer.actualShare, locale)}</span>
     </li>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { Art } from "@/components/Art";
 import { t } from "@/lib/i18n";
 import { advisorWhatsAppUrl } from "@/lib/whatsapp";
 import type { Locale } from "@/types";
@@ -42,6 +43,7 @@ export function ConsultantCTA({ locale, severe, summary, onConsent }: Consultant
 
   return (
     <section className="glass-card" aria-labelledby="cta-title">
+      <Art name="guide" className="art-spot" />
       <h2 id="cta-title" className="text-lg font-semibold">{severe ? t(locale, "contactSevere") : t(locale, "contact")}</h2>
       <motion.button
         type="button"

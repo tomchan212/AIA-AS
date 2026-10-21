@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { AgentNote } from "@/components/AgentNote";
+import { Art } from "@/components/Art";
 import { ResultView } from "@/components/ResultView";
 import { StepInput } from "@/components/StepInput";
 import { analyzePyramid } from "@/lib/analysis/analyze";
@@ -248,6 +249,7 @@ function CashflowStep() {
 }
 
 const moneyCoach = { emergency: "coachEmergency", stable: "coachStable", growth: "coachGrowth" } as const;
+const moneyArt = { emergency: "calendar", stable: "stable", growth: "growth" } as const;
 
 function MoneyStep({ field, label, hint }: { field: "emergencyCash" | "stableSavings" | "growthInvestments"; label: "emergency" | "stable" | "growth"; hint: "emergencyHint" | "stableHint" | "growthHint" }) {
   const locale = usePyramidStore((item) => item.locale);
@@ -258,6 +260,7 @@ function MoneyStep({ field, label, hint }: { field: "emergencyCash" | "stableSav
   const form = useForm({ resolver: zodResolver(amountSchema(locale)), defaultValues: { amount: current ?? "" } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ [field]: Number(values.amount) }); go(step + 1); })}>
+      <Art name={moneyArt[label]} />
       <AgentNote locale={locale} note={moneyCoach[label]} />
       <StepInput label={t(locale, label)} hint={t(locale, hint)} error={form.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("amount")} />
@@ -284,6 +287,7 @@ function LifeStep() {
       patch({ lifeCover: Number(values.amount), criticalIllnessCover: mode === "pro" ? Number(values.ci || 0) : 0 });
       go(step + 1);
     })}>
+      <Art name="umbrella" />
       <AgentNote locale={locale} note="coachLife" />
       <StepInput label={t(locale, "life")} hint={t(locale, "lifeHint")} error={form.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("amount")} />
@@ -314,6 +318,7 @@ function MedicalStep() {
   if (mode === "quick") {
     return (
       <form className="glass-card" onSubmit={choice.handleSubmit((values) => { patch({ hasMedical: values.choice === "yes" }); go(step + 1); })}>
+        <Art name="umbrella" />
         <AgentNote locale={locale} note="coachMedical" />
         <fieldset>
           <legend className="text-lg font-semibold">{t(locale, "medicalYes")}</legend>
@@ -329,6 +334,7 @@ function MedicalStep() {
   }
   return (
     <form className="glass-card" onSubmit={amounts.handleSubmit((values) => { patch({ medicalAnnualLimit: Number(values.amount), accidentCover: Number(values.accident || 0), hasMedical: Number(values.amount) > 0 }); go(step + 1); })}>
+      <Art name="umbrella" />
       <AgentNote locale={locale} note="coachMedical" />
       <StepInput label={t(locale, "medicalLimit")} error={amounts.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...amounts.register("amount")} />
@@ -354,6 +360,7 @@ function SpeculativeStep() {
   const form = useForm({ resolver: zodResolver(speculativeSchema(locale, mode === "pro")), defaultValues: { amount: speculative ?? "", debt: liabilities ?? "" } });
   return (
     <form className="glass-card" onSubmit={form.handleSubmit((values) => { patch({ speculative: Number(values.amount), liabilities: mode === "pro" ? Number(values.debt || 0) : 0 }); go(step + 1); })}>
+      <Art name="top" />
       <AgentNote locale={locale} note="coachSpeculative" />
       <StepInput label={t(locale, "speculative")} hint={t(locale, "speculativeHint")} error={form.formState.errors.amount?.message?.toString()}>
         <input className="field" inputMode="decimal" {...form.register("amount")} />
