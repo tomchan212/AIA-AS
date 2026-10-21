@@ -100,11 +100,13 @@ export const usePyramidStore = create<PyramidState>((set, get) => ({
     set({ ...emptyDraft(), locale, theme, ready: true });
   },
   loadSample(rank: RiskProfile = "stable") {
-    const history = get().history ?? [];
+    const { history = [], locale, theme } = get();
     set({
       ...emptyDraft(),
       ...sampleDraft(rank),
       history,
+      locale,
+      theme,
       consent: true,
       ready: true,
       sample: true,

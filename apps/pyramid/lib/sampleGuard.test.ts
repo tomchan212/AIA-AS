@@ -14,13 +14,15 @@ describe("sample replace confirmation", () => {
     expect(shouldConfirmSampleReplace({ ...blank, consent: true, monthlyIncome: Number.NaN })).toBe(false);
   });
 
-  it("keeps score history when an example replaces the draft", () => {
+  it("keeps score history, language, and theme when an example replaces the draft", () => {
     const history = [{ at: "2026-10-01", score: 41 }];
-    usePyramidStore.setState({ ...emptyDraft(), ready: true, consent: true, monthlyIncome: 21000, history, sample: false });
+    usePyramidStore.setState({ ...emptyDraft(), ready: true, consent: true, monthlyIncome: 21000, history, sample: false, locale: "en", theme: "dark" });
     usePyramidStore.getState().loadSample("growth");
     const next = usePyramidStore.getState();
     expect(next.sample).toBe(true);
     expect(next.history).toEqual(history);
+    expect(next.locale).toBe("en");
+    expect(next.theme).toBe("dark");
     expect(next.monthlyIncome).not.toBe(21000);
   });
 });
