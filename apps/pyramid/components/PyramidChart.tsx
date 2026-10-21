@@ -5,42 +5,17 @@ import { useReducedMotion } from "framer-motion";
 import { Art } from "@/components/Art";
 import { formatPercent, formatHkd } from "@/lib/format";
 import { layerLabel, statusLabel, t } from "@/lib/i18n";
-import type { LayerAssessment, Locale } from "@/types";
+import type { GapStatus, LayerAssessment, LayerId, Locale } from "@/types";
 
 const ART = { protection: "base", stable: "stable", growth: "growth", speculative: "top" } as const;
-
-const FILL = {
-  enough: "#1f7a4d",
-  partial: "#9a6700",
-  severe: "#b42318",
-  ideal: "#8d6b1f",
-};
 
 interface PyramidChartProps {
   layers: LayerAssessment[];
   locale: Locale;
 }
 
-function stackBands(shares: number[]) {
-  const count = shares.length;
-  const gap = 8;
-  const usable = 206 - gap * (count - 1);
-  const total = shares.reduce((sum, share) => sum + share, 0) || 1;
-  let heights = shares.map((share) => Math.max((share / total) * usable, 24));
-  const sum = heights.reduce((totalHeight, height) => totalHeight + height, 0);
-  heights = heights.map((height) => (height / sum) * usable);
-  let y = 12;
-  return heights.map((height, index) => {
-    const top = y;
-    const bottom = y + height;
-    y = bottom + gap;
-    const half = (step: number) => 18 + (step / count) * 76;
-    return {
-      points: `${100 - half(index + 0.2)},${top} ${100 + half(index + 0.2)},${top} ${100 + half(index + 1)},${bottom} ${100 - half(index + 1)},${bottom}`,
-      labelY: (top + bottom) / 2,
-      height,
-    };
-  });
+function pieceSrc(status: GapStatus | "ideal", id: LayerId) {
+  return `/pyramid/art/pyramid/${status}-${id}.png`;
 }
 
 function useCountUp(target: number, live: boolean) {
@@ -78,6 +53,33 @@ function LegendRow({ layer, locale, live }: { layer: LayerAssessment; locale: Lo
   );
 }
 
+function PyramidFigure({
+  title,
+  pieces,
+  reduce,
+}: {
+  title: string;
+  pieces: { id: LayerId; status: GapStatus | "ideal"; label: string }[];
+  reduce: boolean | null;
+}) {
+  return (
+    <figure className="min-w-0 flex-1">
+      <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
+      <div className="pyramid-stack" role="img" aria-label={`${title}. ${pieces.map((piece) => piece.label).join(", ")}`}>
+        {pieces.map((piece, index) => (
+          <img
+            key={piece.id}
+            src={pieceSrc(piece.status, piece.id)}
+            alt=""
+            className={reduce ? "pyramid-settled" : "pyramid-piece"}
+            style={{ ["--i" as string]: index }}
+          />
+        ))}
+      </div>
+    </figure>
+  );
+}
+
 export function PyramidChart({ layers, locale }: PyramidChartProps) {
   const reduce = useReducedMotion();
   const root = useRef<HTMLDivElement>(null);
@@ -87,7 +89,8 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
     if (!node) return;
     const reveal = () => {
       const box = node.getBoundingClientRect();
-      if (box.top < 180 && box.top > -80 && box.bottom > 220) setLive(true);
+      const visible = box.bottom > 80 && box.top < window.innerHeight - 40;
+      if (visible) setLive(true);
     };
     reveal();
     window.addEventListener("scroll", reveal, { passive: true });
@@ -97,48 +100,28 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
       window.removeEventListener("resize", reveal);
     };
   }, []);
-  const order = [...layers].reverse();
-  const idealVisual = order.map((layer) => Math.max(layer.idealShare, 0.08));
-  const actualVisual = order.map((layer) => Math.max(layer.actualShare, 0.08));
-  const idealBands = stackBands(idealVisual);
-  const actualBands = stackBands(actualVisual);
-  const caption = layers.map((layer) => `${layerLabel(locale, layer.id)} ${formatPercent(layer.actualShare, locale)} ${statusLabel(locale, layer.status)}`).join(", ");
-
-  const column = (title: string, bands: { points: string; labelY: number; height: number }[], mode: "ideal" | "actual") => (
-    <figure className="min-w-0 flex-1">
-      <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
-      <svg
-        viewBox="0 0 200 230"
-        className="mx-auto block h-56 w-full max-w-[200px] overflow-hidden"
-        role="img"
-        aria-label={`${title}. ${caption}`}
-      >
-        {order.map((layer, index) => {
-          const path = bands[index];
-          const fill = mode === "ideal"
-            ? (index === order.length - 1 ? "#3aaa6d" : "#fff6ea")
-            : { enough: "#3aaa6d", partial: "#f0c36a", severe: "#ef7d72" }[layer.status];
-          return (
-            <g
-              key={`${mode}-${layer.id}`}
-              className={reduce ? "pyramid-settled" : "pyramid-piece"}
-              style={{ ["--i" as string]: order.length - 1 - index }}
-            >
-              <polygon points={path.points} fill={fill} stroke="#2a211c" strokeWidth="5" strokeLinejoin="round">
-                <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
-              </polygon>
-            </g>
-          );
-        })}
-      </svg>
-    </figure>
-  );
 
   return (
     <div ref={root} className={live ? "pyramid-live" : ""}>
       <div className="flex gap-3">
-        {column(t(locale, "ideal"), idealBands, "ideal")}
-        {column(t(locale, "actual"), actualBands, "actual")}
+        <PyramidFigure
+          title={t(locale, "ideal")}
+          reduce={reduce}
+          pieces={layers.map((layer) => ({
+            id: layer.id,
+            status: "ideal",
+            label: `${layerLabel(locale, layer.id)} ${formatPercent(layer.idealShare, locale)}`,
+          }))}
+        />
+        <PyramidFigure
+          title={t(locale, "actual")}
+          reduce={reduce}
+          pieces={layers.map((layer) => ({
+            id: layer.id,
+            status: layer.status,
+            label: `${layerLabel(locale, layer.id)} ${formatPercent(layer.actualShare, locale)} ${statusLabel(locale, layer.status)}`,
+          }))}
+        />
       </div>
       <ul className="mt-3 space-y-2">
         {layers.map((layer) => <LegendRow key={layer.id} layer={layer} locale={locale} live={live} />)}
