@@ -147,14 +147,16 @@ button[type="submit"]::after {
   animation: sheen 2.8s ease-in-out infinite;
 }
 
-.pyramid-band {
+.pyramid-piece {
+  opacity: 0;
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: band-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-play-state: paused;
 }
-.pyramid-live .pyramid-late .pyramid-band { animation-delay: calc(0.35s + var(--i) * 0.12s); animation-play-state: running; }
-.pyramid-live .pyramid-soon .pyramid-band { animation-delay: calc(var(--i) * 0.12s); animation-play-state: running; }
+.pyramid-live .pyramid-piece {
+  animation: stack-up 0.42s cubic-bezier(0.16, 0.84, 0.28, 1) forwards;
+  animation-delay: calc(var(--i) * 0.07s + var(--side) * 0.1s);
+}
+.pyramid-settled { opacity: 1; }
 .dot-live {
   display: inline-block;
   width: 0.75rem;
@@ -189,7 +191,10 @@ button[type="submit"]::after {
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-4px) rotate(4deg); } }
 @keyframes shimmer { from { transform: translateX(-120%); } to { transform: translateX(280%); } }
 @keyframes sheen { 0%, 60% { transform: translateX(-180%); } 100% { transform: translateX(320%); } }
-@keyframes band-in { from { opacity: 0; transform: translateY(16px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes stack-up {
+  from { opacity: 0; transform: scaleY(0.2); }
+  to { opacity: 1; transform: scaleY(1); }
+}
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 @keyframes pop { 0% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
 @keyframes pop-center { from { transform: scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { formatPercent, formatHkd } from "@/lib/format";
 import { layerLabel, statusLabel, t } from "@/lib/i18n";
 import type { LayerAssessment, Locale } from "@/types";
@@ -105,30 +105,37 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
   const column = (title: string, bands: { d: string; labelY: number; height: number }[], mode: "ideal" | "actual") => (
     <figure className="min-w-0 flex-1">
       <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
-      <motion.svg
+      <svg
         viewBox="0 0 200 230"
         className="mx-auto block h-56 w-full max-w-[200px] overflow-hidden"
         role="img"
         aria-label={`${title}. ${caption}`}
       >
+        <defs>
+          <linearGradient id={`shine-${mode}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fffaf3" stopOpacity="0.34" />
+            <stop offset="0.55" stopColor="#fffaf3" stopOpacity="0" />
+            <stop offset="1" stopColor="#2a211c" stopOpacity="0.16" />
+          </linearGradient>
+        </defs>
         {order.map((layer, index) => {
           const path = bands[index];
           const fill = mode === "ideal" ? FILL.ideal : FILL[layer.status];
           const fromBottom = order.length - 1 - index;
           return (
-            <motion.g
+            <g
               key={`${mode}-${layer.id}`}
-              initial={reduce ? false : { opacity: 0 }}
-              animate={live || reduce ? { opacity: mode === "ideal" ? 0.92 : 1 } : { opacity: 0 }}
-              transition={{ duration: 0.85, delay: (mode === "actual" ? 1.7 : 0) + fromBottom * 0.38, ease: [0.16, 0.84, 0.24, 1] }}
+              className={reduce ? "pyramid-settled" : "pyramid-piece"}
+              style={{ ["--i" as string]: fromBottom, ["--side" as string]: mode === "actual" ? 1 : 0 }}
             >
               <path d={path.d} fill={fill}>
                 <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
               </path>
-            </motion.g>
+              <path d={path.d} fill={`url(#shine-${mode})`} />
+            </g>
           );
         })}
-      </motion.svg>
+      </svg>
     </figure>
   );
 
