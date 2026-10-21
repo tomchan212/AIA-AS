@@ -21,23 +21,24 @@ interface PyramidChartProps {
   locale: Locale;
 }
 
-function stackBands(visual: number[], total: number) {
-  let cursor = 16;
-  return visual.map((share) => {
-    const top = cursor;
-    const bottom = cursor + (share / total) * 198;
-    cursor = bottom;
-    const edge = (y: number) => {
-      const progress = (y - 16) / 198;
-      const half = 18 + progress * 74;
-      return [100 - half, 100 + half];
-    };
-    const [leftTop, rightTop] = edge(top);
-    const [leftBottom, rightBottom] = edge(bottom);
+function stackBands(shares: number[]) {
+  const count = shares.length;
+  const gap = 8;
+  const usable = 206 - gap * (count - 1);
+  const total = shares.reduce((sum, share) => sum + share, 0) || 1;
+  let heights = shares.map((share) => Math.max((share / total) * usable, 24));
+  const sum = heights.reduce((totalHeight, height) => totalHeight + height, 0);
+  heights = heights.map((height) => (height / sum) * usable);
+  let y = 12;
+  return heights.map((height, index) => {
+    const top = y;
+    const bottom = y + height;
+    y = bottom + gap;
+    const half = (step: number) => 18 + (step / count) * 76;
     return {
-      d: `M ${leftTop} ${top} L ${rightTop} ${top} L ${rightBottom} ${bottom} L ${leftBottom} ${bottom} Z`,
+      points: `${100 - half(index + 0.2)},${top} ${100 + half(index + 0.2)},${top} ${100 + half(index + 1)},${bottom} ${100 - half(index + 1)},${bottom}`,
       labelY: (top + bottom) / 2,
-      height: bottom - top,
+      height,
     };
   });
 }
@@ -99,13 +100,11 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
   const order = [...layers].reverse();
   const idealVisual = order.map((layer) => Math.max(layer.idealShare, 0.08));
   const actualVisual = order.map((layer) => Math.max(layer.actualShare, 0.08));
-  const idealTotal = idealVisual.reduce((sum, value) => sum + value, 0);
-  const actualTotal = actualVisual.reduce((sum, value) => sum + value, 0);
-  const idealBands = stackBands(idealVisual, idealTotal);
-  const actualBands = stackBands(actualVisual, actualTotal);
+  const idealBands = stackBands(idealVisual);
+  const actualBands = stackBands(actualVisual);
   const caption = layers.map((layer) => `${layerLabel(locale, layer.id)} ${formatPercent(layer.actualShare, locale)} ${statusLabel(locale, layer.status)}`).join(", ");
 
-  const column = (title: string, bands: { d: string; labelY: number; height: number }[], mode: "ideal" | "actual") => (
+  const column = (title: string, bands: { points: string; labelY: number; height: number }[], mode: "ideal" | "actual") => (
     <figure className="min-w-0 flex-1">
       <figcaption className="mb-2 text-center text-sm font-semibold">{title}</figcaption>
       <svg
@@ -114,27 +113,20 @@ export function PyramidChart({ layers, locale }: PyramidChartProps) {
         role="img"
         aria-label={`${title}. ${caption}`}
       >
-        <defs>
-          <linearGradient id={`shine-${mode}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fffaf3" stopOpacity="0.34" />
-            <stop offset="0.55" stopColor="#fffaf3" stopOpacity="0" />
-            <stop offset="1" stopColor="#2a211c" stopOpacity="0.16" />
-          </linearGradient>
-        </defs>
         {order.map((layer, index) => {
           const path = bands[index];
-          const fill = mode === "ideal" ? FILL.ideal : FILL[layer.status];
-          const fromBottom = order.length - 1 - index;
+          const fill = mode === "ideal"
+            ? (index === order.length - 1 ? "#3aaa6d" : "#fff6ea")
+            : { enough: "#3aaa6d", partial: "#f0c36a", severe: "#ef7d72" }[layer.status];
           return (
             <g
               key={`${mode}-${layer.id}`}
               className={reduce ? "pyramid-settled" : "pyramid-piece"}
-              style={{ ["--i" as string]: fromBottom, ["--side" as string]: mode === "actual" ? 1 : 0 }}
+              style={{ ["--i" as string]: order.length - 1 - index }}
             >
-              <path d={path.d} fill={fill}>
+              <polygon points={path.points} fill={fill} stroke="#2a211c" strokeWidth="5" strokeLinejoin="round">
                 <title>{`${layerLabel(locale, layer.id)} ${formatPercent(mode === "ideal" ? layer.idealShare : layer.actualShare, locale)}`}</title>
-              </path>
-              <path d={path.d} fill={`url(#shine-${mode})`} />
+              </polygon>
             </g>
           );
         })}
