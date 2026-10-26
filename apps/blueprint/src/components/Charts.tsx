@@ -64,8 +64,9 @@ export function WealthChart() {
             <YAxis tickFormatter={axisMoney} tick={{ fill: "#1E293B", fontSize: 12 }} width={56} />
             <Tooltip content={<LineTip />} />
             <Legend formatter={(value) => (value === "planA" ? "方案 A" : "方案 B")} />
-            <ReferenceLine x={47} stroke="#FB7185" strokeDasharray="4 4" label={{ value: "B供完", fill: "#9F1239", fontSize: 12 }} />
-            <ReferenceLine x={55} stroke="#92400E" strokeDasharray="4 4" label={{ value: "A轉正", fill: "#78350F", fontSize: 12 }} />
+            <ReferenceLine x={47} stroke="#FB7185" strokeDasharray="4 4" label={{ value: "B超過本金", fill: "#9F1239", fontSize: 11 }} />
+            <ReferenceLine x={50} stroke="#1E293B" strokeDasharray="2 3" label={{ value: "B轉正", fill: "#1E293B", fontSize: 11 }} />
+            <ReferenceLine x={55} stroke="#92400E" strokeDasharray="4 4" label={{ value: "A轉正", fill: "#78350F", fontSize: 11 }} />
             <Line type="monotone" dataKey="planA" stroke="#92400E" strokeWidth={3} dot={{ r: 3 }} />
             <Line type="monotone" dataKey="planB" stroke="#1E293B" strokeWidth={3} dot={{ r: 3 }} />
           </LineChart>

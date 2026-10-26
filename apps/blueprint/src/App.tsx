@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
 import { HeartPulse, PiggyBank, Sparkles, Timer, Trophy } from "lucide-react";
 import { BurdenChart, WealthChart } from "./components/Charts";
-import { MASTER_DATA, MILESTONES, SUMMARY_STATS } from "./data";
+import { MILESTONES, SUMMARY_STATS } from "./data";
 import { money, signedMoney } from "./format";
 import { diagnose, leadText, viewAtAge, type QuizChoice } from "./model";
 
 const POWERS = [
-  { title: "9 種貨幣可換", body: "由第 2 個保單年度起，說明書列明每年可轉換一次貨幣，而且不用驗身。實際幣種以保單條款為準。" },
-  { title: "一張保單可以分拆", body: "由第 3 年起可以把一張保單拆成多張，方便日後把價值分給不同的人。怎麼拆、拆多少，以當時條款為準。" },
-  { title: "紅利鎖定與解鎖", body: "由第 15 年起，說明書寫明可把一部分非保證紅利鎖定，比例約 10% 至 70%，之後也可以解鎖。鎖定不等於保證增值。" },
-  { title: "精神上無行為能力時的提取", body: "可預先指定一名 18 歲或以上的人，在指定情況下提取現金價值的 10% 至 100%。要符合保單上的定義和手續。" },
-  { title: "保費寬限期可延長", body: "說明書提到結婚、子女出生或轉工時，寬限期可延長至 365 日。是否適用要看當時的申請條件。" },
-  { title: "可更換受保人", body: "說明書寫明受保人可以更換，用來把保單交到下一代。另有最高 USD 2,800 的學業獎學金項目，要符合公布的條件。" },
+  { title: "9 種貨幣可換", body: "產品簡介列明可選人民幣、英鎊、美元、澳元、加元、港元、澳門幣（只適用於澳門繕發）、歐元及新加坡元。貨幣轉換由第 2 個保單年度終結後起，每個保單年度終結後 30 日內可行使。轉換後價值會按新貨幣重算。" },
+  { title: "保單可以分拆", body: "由第 3 個保單年度終結後，或供款期完結後（以較後者為準），可申請把部分保單價值分到另一張保單。分拆要公司核准。" },
+  { title: "紅利鎖定與解鎖", body: "由第 15 個保單年度終結後起，每個年度終結後 30 日內可鎖定一次。轉移的復歸紅利及終期分紅百分比須相同，不可低於 10% 或高於 70%。鎖定戶口利息並非保證。行使鎖定 1 年後可以解鎖，解鎖百分比為 10% 至 100%。" },
+  { title: "精神上無行為能力選項", body: "由第 3 個保單年度終結後起，可預先指定一名 18 歲或以上的家庭成員，以及保單價值的 10% 至 100%。每份保單只支付一次，而且要公司批准。支付會減少保單價值。" },
+  { title: "延繳保費寬限期", body: "產品簡介寫明這項只適用於 3 年、5 年及 10 年供款期，所以對應這頁的方案 B，不適用於供 20 年的方案 A。指定情況包括被裁退、結婚、離婚、子女出生或領養、買入新住宅，或更改主要居住地。每份保單只可申請一次，寬限期最多延長至 365 日。" },
+  { title: "可更換受保人", body: "由第 1 個保單年度終結後起，可在受保人在生時申請無限次更改受保人，亦可指定第二受保人。卓越成績獎最高一項是獲全球大學排名首 10 位取錄，獎金 2,800 美元；同一受保人的所有盈御 3 保單只支付一次。須符合當時規則。" },
 ];
 
 const QUESTIONS: { prompt: string; a: string; b: string }[] = [
@@ -65,8 +65,13 @@ export default function App() {
   const [answers, setAnswers] = useState<(QuizChoice | null)[]>([null, null, null]);
   const view = useMemo(() => viewAtAge(age), [age]);
   const result = answers.every(Boolean) ? diagnose(answers as QuizChoice[]) : null;
-  const badgeA = view.planA.netBenefit >= 0 ? "淨利益已是正數" : view.planA.surrenderValue > SUMMARY_STATS.planAPrincipal && view.age >= 57 ? "供款期已過" : undefined;
-  const badgeB = view.age >= 47 && view.planB.surrenderValue >= SUMMARY_STATS.planBPrincipal ? "現金價值已超過儲蓄本金" : undefined;
+  const badgeFor = (net: number, surrender: number, principal: number) => {
+    if (net >= 0) return "淨利益已是正數";
+    if (surrender >= principal) return "現金價值已超過儲蓄本金";
+    return undefined;
+  };
+  const badgeA = badgeFor(view.planA.netBenefit, view.planA.surrenderValue, SUMMARY_STATS.planAPrincipal);
+  const badgeB = badgeFor(view.planB.netBenefit, view.planB.surrenderValue, SUMMARY_STATS.planBPrincipal);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 md:px-6">
@@ -80,16 +85,16 @@ export default function App() {
       </header>
 
       <section className="mt-4 grid gap-3 md:grid-cols-3">
-        <Metric label="說明書上的累計支出（方案 A 至 100 歲）" value={money(SUMMARY_STATS.totalMedicalGross)} note="這是方案 A 到 100 歲的累計支出，裡面有儲蓄保費和醫保保費。" />
-        <Metric label="說明書列出的醫療節省示意" value={money(SUMMARY_STATS.projectedMedicalSaved)} note={`扣掉後的淨醫療成本示意是 ${money(SUMMARY_STATS.netMedicalCost)}。`} />
-        <Metric label="方案 B 在 100 歲的現金價值" value={money(MASTER_DATA[MASTER_DATA.length - 1].planB.surrenderValue)} note="方案 A 同期是較低的現金價值。兩者都含非保證部分。" />
+        <Metric label="自願醫保保費合計（38歲至100歲）" value={money(SUMMARY_STATS.totalMedicalPremium)} note="兩份說明書的醫療保費欄加總。頁尾印成 HK$ 2,343,129，相差 0.2 元。" />
+        <Metric label="說明書寫的可節省醫療保費" value={money(SUMMARY_STATS.illustratedMedicalSaved)} note="這兩個數直接印在說明書頁尾，此頁沒有另外推算節省方法。" />
+        <Metric label="方案 B 在 100 歲的現金價值" value={money(SUMMARY_STATS.planBAge100Value)} note={`方案 A 同期是 ${money(SUMMARY_STATS.planAAge100Value)}。現金價值含非保證部分。`} />
       </section>
 
       <section className="doodle-card mt-6 p-5 md:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-xl font-extrabold">拉到 Mandy 幾歲</h2>
-            <p className="text-sm text-ink/70">{view.estimated ? "這個年齡介乎兩個說明書年度之間，下面是直線估算。" : `說明書第 ${view.policyYear} 年，Mandy ${view.age} 歲。`}</p>
+            <p className="text-sm text-ink/70">第 {view.policyYear} 年，Mandy {view.age} 歲。38 至 100 歲每一行都來自說明書，累計已付按每年保費加總。</p>
           </div>
           <p className="rounded-full border-2 border-dashed border-blush px-3 py-1 text-sm font-bold text-rose-700">{leadText(view)}</p>
         </div>
@@ -107,7 +112,7 @@ export default function App() {
           <PlanColumn name="方案 A · 每年儲蓄 HK$ 24,000，供 20 年" tone="bg-amber-50" plan={view.planA} badge={badgeA} />
           <PlanColumn name="方案 B · 每年儲蓄 HK$ 39,000，供 10 年" tone="bg-white" plan={view.planB} badge={badgeB} />
         </div>
-        <p className="mt-3 text-xs leading-5 text-ink/60">淨利益 = 退保現金價值 − 累計已付。第 10 年方案 B 的現金價值高過已繳儲蓄本金 HK$ 390,000，但連醫保在內的淨利益仍是負數，要到第 15 年才轉正。</p>
+        <p className="mt-3 text-xs leading-5 text-ink/60">淨利益 = 可退保現金價值 − 累計已付（儲蓄保費加自願醫保保費）。方案 B 在第 10 年現金價值已高過儲蓄本金 HK$ 390,000，淨利益要到第 13 年（50 歲）才轉正。方案 A 的現金價值在第 17 年超過儲蓄本金，淨利益在第 18 年轉正。說明書在供款期之後的累積欄有幾行對不上每年保費，此頁改為自行累加。</p>
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -124,12 +129,12 @@ export default function App() {
         <article className="doodle-card p-4">
           <PiggyBank className="text-cocoa" />
           <h3 className="mt-2 font-extrabold">儲蓄本金總共付多少</h3>
-          <p className="mt-1 text-sm">方案 A {money(SUMMARY_STATS.planAPrincipal)}。方案 B {money(SUMMARY_STATS.planBPrincipal)}，本金少 {money(SUMMARY_STATS.principalDifference)}。</p>
+          <p className="mt-1 text-sm">方案 A {money(SUMMARY_STATS.planAPrincipal)}。方案 B {money(SUMMARY_STATS.planBPrincipal)}，本金少 {money(SUMMARY_STATS.planAPrincipal - SUMMARY_STATS.planBPrincipal)}。</p>
         </article>
         <article className="doodle-card p-4">
           <HeartPulse className="text-blush" />
           <h3 className="mt-2 font-extrabold">什麼時候追平已付的錢</h3>
-          <p className="mt-1 text-sm">方案 A 的淨利益在第 18 年轉正。方案 B 的現金價值在第 10 年已超過儲蓄本金，淨利益在第 15 年轉正。</p>
+          <p className="mt-1 text-sm">方案 A 在第 17 年現金價值超過儲蓄本金，淨利益在第 18 年轉正。方案 B 在第 10 年現金價值已超過儲蓄本金，淨利益在第 13 年轉正。</p>
         </article>
         <article className="doodle-card p-4">
           <Trophy className="text-cocoa" />
@@ -176,7 +181,7 @@ export default function App() {
         ) : null}
       </section>
 
-      <p className="mt-6 text-xs leading-5 text-ink/60">此頁用 Mandy Chan 37 歲的說明書年度表做對比。退保價值、紅利和醫療節省都可能與實際不同，並非保證，亦非銷售要約。中間年齡是相鄰年度的直線估算。</p>
+      <p className="mt-6 text-xs leading-5 text-ink/60">數字來自 Mandy Chan 37 歲的兩份年度表，以及《盈御多元貨幣儲蓄保險計劃 3》產品簡介。可退保現金價值包含非保證的復歸紅利和終期分紅，並非保證，亦非銷售要約。說明書最後三行把 98 至 100 歲的保單年度印成 65 至 67，與「38 歲為第 1 年」不符，此頁改按年齡顯示為第 61 至 63 年。匯率備註為 1 美元 = 7.85 港元。</p>
     </main>
   );
 }
