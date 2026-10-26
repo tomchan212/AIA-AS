@@ -58,6 +58,7 @@ const NAV_ITEMS = [
   { id: "editor", label: "頁面＋服務", short: "頁面", icon: "✎", title: "頁面與服務編輯" },
   { id: "notifications", label: "通知", short: "通知", icon: "🔔", title: "通知設定" },
   { id: "export", label: "匯出", short: "匯出", icon: "⇪", title: "匯出與整合" },
+  { id: "blueprint", label: "盈御試算", short: "試算", icon: "✦", title: "盈御試算", href: "/blueprint/" },
 ];
 
 const adminShell = document.getElementById("admin-shell");
@@ -644,15 +645,18 @@ async function loadData() {
 }
 
 function renderNav() {
-  adminNav.innerHTML = NAV_ITEMS.map(
-    (item) => `
-    <button type="button" class="admin-nav-item${currentView === item.id ? " active" : ""}"
-      data-view="${item.id}">
+  adminNav.innerHTML = NAV_ITEMS.map((item) => {
+    const inner = `
       <span class="admin-nav-icon" aria-hidden="true">${item.icon}</span>
       <span class="admin-nav-text">${escapeHtml(item.label)}</span>
-      <span class="admin-nav-short">${escapeHtml(item.short)}</span>
-    </button>`
-  ).join("");
+      <span class="admin-nav-short">${escapeHtml(item.short)}</span>`;
+    if (item.href) {
+      return `<a class="admin-nav-item" href="${item.href}" target="_blank" rel="noopener">${inner}</a>`;
+    }
+    return `
+    <button type="button" class="admin-nav-item${currentView === item.id ? " active" : ""}"
+      data-view="${item.id}">${inner}</button>`;
+  }).join("");
 
   adminNav.querySelectorAll("[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => {

@@ -2615,6 +2615,7 @@ body.sheet-open {
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
   text-align: left;
   padding: 0.6rem 0.85rem;
   border-radius: var(--radius-md);

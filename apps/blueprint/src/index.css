@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(251, 113, 133, 0.16), transparent 28%),
+    radial-gradient(circle at 90% 0%, rgba(146, 64, 14, 0.08), transparent 26%),
+    #faf8f5;
+  color: #1e293b;
+}
+
+.doodle-card {
+  @apply rounded-3xl border-2 border-ink/80 bg-white shadow-doodle;
+}
+
+.doodle-btn {
+  @apply rounded-full border-2 border-ink/80 bg-white px-3 py-2 text-sm font-bold shadow-doodle transition hover:-translate-y-0.5;
+}
+
+.doodle-btn[aria-pressed="true"] {
+  @apply bg-ink text-paper;
+}
