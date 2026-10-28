@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Sparkles } from "lucide-react";
 import { BurdenChart, WealthChart } from "./components/Charts";
 import { MILESTONES, USD_HKD, WITHDRAWAL_BANDS, withdrawalSum } from "./data";
 import { hkdMoney, money } from "./format";
-import { diagnose, medicalCovered, rowAtAge, type QuizChoice } from "./model";
+import { allYears, diagnose, medicalCovered, yearLine, type QuizChoice } from "./model";
 
 const POWERS = [
   { title: "9 種貨幣", body: "產品簡介列明可選人民幣、英鎊、美元、澳元、加元、港元、澳門幣（只適用於澳門繕發）、歐元及新加坡元。由第 2 個保單年度終結後起，每個保單年度終結後 30 日內可申請轉換。轉換後價值按新貨幣重算。" },
@@ -39,10 +39,13 @@ export default function App() {
   const [age, setAge] = useState(47);
   const [power, setPower] = useState(0);
   const [answers, setAnswers] = useState<(QuizChoice | null)[]>([null, null, null]);
-  const selected = useMemo(() => rowAtAge(age), [age]);
-  const row = selected.row;
+  const row = useMemo(() => yearLine(age), [age]);
+  const years = useMemo(() => allYears(), []);
+  useEffect(() => {
+    document.getElementById(`year-${age}`)?.scrollIntoView({ block: "nearest" });
+  }, [age]);
   const result = answers.every(Boolean) ? diagnose(answers as QuizChoice[]) : null;
-  const cover = medicalCovered(row.age, row.avfMedicalRiderHKD);
+  const cover = row.avfHKD == null ? null : medicalCovered(row.age, row.avfHKD);
   const bandTotal = withdrawalSum();
 
   return (
@@ -83,7 +86,7 @@ export default function App() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-xl font-extrabold">拉到哪一年</h2>
-            <p className="text-sm text-ink/70">{selected.snapped ? `所選 ${age} 歲沒有逐行數字，下面顯示不超過這個年齡的最近一筆：${row.calendarYear} 年、${row.age} 歲。` : `${row.calendarYear} 年，第 ${row.policyYear} 年，${row.age} 歲。`}</p>
+            <p className="text-sm text-ink/70">{row.calendarYear} 年，第 {row.policyYear} 年，{row.age} 歲。保費和提取金額每年都有；現金價值只在對照表有寫的年份顯示。</p>
           </div>
         </div>
         <label className="mt-4 block text-sm font-bold" htmlFor="age-slider">年齡 {age} 歲</label>
@@ -103,8 +106,8 @@ export default function App() {
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3"><dt>今年儲蓄保費</dt><dd className="font-bold">{money(row.planA.savingsPremiumUSD, currency)}</dd></div>
               <div className="flex justify-between gap-3"><dt>累計儲蓄本金</dt><dd className="font-bold">{money(row.planA.cumulativeSavingsUSD, currency)}</dd></div>
-              <div className="flex justify-between gap-3"><dt>合計現金價值</dt><dd className="font-bold">{money(row.planA.combinedCashValueUSD, currency)}</dd></div>
-              <div className="flex justify-between gap-3"><dt>AVF 普通房保費</dt><dd className="font-bold">{hkdMoney(row.avfMedicalRiderHKD, currency)}{row.avfApproximate ? "（概算）" : ""}</dd></div>
+              <div className="flex justify-between gap-3"><dt>合計現金價值</dt><dd className="font-bold">{row.planA.combinedCashValueUSD == null ? "未列" : money(row.planA.combinedCashValueUSD, currency)}</dd></div>
+              <div className="flex justify-between gap-3"><dt>AVF 普通房保費</dt><dd className="font-bold">{row.avfHKD == null ? "未列" : hkdMoney(row.avfHKD, currency)}{row.avfApproximate ? "（概算）" : ""}</dd></div>
             </dl>
             <p className="mt-3 text-sm leading-6">{row.planA.note}</p>
           </article>
@@ -114,11 +117,50 @@ export default function App() {
               <div className="flex justify-between gap-3"><dt>今年儲蓄保費</dt><dd className="font-bold">{money(row.planB.savingsPremiumUSD, currency)}</dd></div>
               <div className="flex justify-between gap-3"><dt>累計基本本金</dt><dd className="font-bold">{money(row.planB.cumulativeSavingsUSD, currency)}</dd></div>
               <div className="flex justify-between gap-3"><dt>今年提取</dt><dd className="font-bold">{money(row.planB.annualWithdrawalUSD, currency)}</dd></div>
-              <div className="flex justify-between gap-3"><dt>對照表累計提取</dt><dd className="font-bold">{money(row.planB.cumulativeWithdrawnUSD, currency)}</dd></div>
-              <div className="flex justify-between gap-3"><dt>提取後剩餘</dt><dd className="font-bold">{money(row.planB.remainingCashValueUSD, currency)}</dd></div>
+              <div className="flex justify-between gap-3"><dt>按四段累計提取</dt><dd className="font-bold">{money(row.planB.cumulativeWithdrawnUSD, currency)}</dd></div>
+              <div className="flex justify-between gap-3"><dt>提取後剩餘</dt><dd className="font-bold">{row.planB.remainingCashValueUSD == null ? "未列" : money(row.planB.remainingCashValueUSD, currency)}</dd></div>
             </dl>
-            <p className="mt-3 text-sm leading-6">{row.planB.medicalOffsetStatus}</p>
+            <p className="mt-3 text-sm leading-6">{row.planB.note}</p>
           </article>
+        </div>
+      </section>
+
+      <section className="doodle-card mt-6 p-4">
+        <h2 className="text-xl font-extrabold">2019–2082 每年一行</h2>
+        <p className="mt-1 text-sm text-ink/70">保費按兩張單各供 10 年、以及方案 B 的四段提取，每年列出。現金價值只填對照表有寫的年份。</p>
+        <div className="mt-3 max-h-96 overflow-auto">
+          <table className="w-full min-w-[720px] text-left text-xs">
+            <thead className="sticky top-0 bg-white">
+              <tr>
+                <th className="py-2">年份</th>
+                <th>年齡</th>
+                <th>A 保費</th>
+                <th>A 累計本金</th>
+                <th>A 現金價值</th>
+                <th>B 保費</th>
+                <th>B 提取</th>
+                <th>B 累計提取</th>
+                <th>B 剩餘</th>
+                <th>AVF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {years.map((item) => (
+                <tr id={`year-${item.age}`} key={item.age} className={item.age === age ? "bg-rose-50 font-bold" : "border-t border-ink/10"}>
+                  <td className="py-1">{item.calendarYear}</td>
+                  <td>{item.age}</td>
+                  <td>{money(item.planA.savingsPremiumUSD, currency)}</td>
+                  <td>{money(item.planA.cumulativeSavingsUSD, currency)}</td>
+                  <td>{item.planA.combinedCashValueUSD == null ? "—" : money(item.planA.combinedCashValueUSD, currency)}</td>
+                  <td>{money(item.planB.savingsPremiumUSD, currency)}</td>
+                  <td>{money(item.planB.annualWithdrawalUSD, currency)}</td>
+                  <td>{money(item.planB.cumulativeWithdrawnUSD, currency)}</td>
+                  <td>{item.planB.remainingCashValueUSD == null ? "—" : money(item.planB.remainingCashValueUSD, currency)}</td>
+                  <td>{item.avfHKD == null ? "—" : hkdMoney(item.avfHKD, currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -145,14 +187,14 @@ export default function App() {
         </div>
         {row.age >= 60 ? (
           <div className="mt-4 rounded-3xl border-2 border-dashed border-ink p-4 text-sm leading-6">
-            <p>這筆對照年度的 AVF 普通房保費是 {hkdMoney(row.avfMedicalRiderHKD, currency)}。方案 B 當年提取是 {money(row.planB.annualWithdrawalUSD, currency)}，即 {hkdMoney(row.planB.annualWithdrawalUSD * USD_HKD, "HKD")}。</p>
-            {cover.covered ? (
+            <p>方案 B 當年提取是 {money(row.planB.annualWithdrawalUSD, currency)}，即 {hkdMoney(row.planB.annualWithdrawalUSD * USD_HKD, "HKD")}。AVF 普通房保費是 {row.avfHKD == null ? "這一年沒有列出" : hkdMoney(row.avfHKD, currency)}。</p>
+            {cover == null ? <p className="mt-2">沒有這一年的醫保保費，所以不能判斷提取金額是否夠付。</p> : cover.covered ? (
               <p className="mt-2 flex items-start gap-2 font-bold text-emerald-800"><BadgeCheck aria-hidden="true" />提取金額高於或等於這一年列出的醫保保費。</p>
             ) : (
-              <p className="mt-2 font-bold text-rose-700">提取金額未蓋過這一年列出的醫保保費，還差 {hkdMoney(cover.gapHKD, "HKD")}。不是每一年都能用提取金額付清保費。</p>
+              <p className="mt-2 font-bold text-rose-700">提取金額未蓋過這一年列出的醫保保費，還差 {hkdMoney(cover.gapHKD, "HKD")}。</p>
             )}
           </div>
-        ) : <p className="mt-4 text-sm">60 歲之前對照表沒有提取。</p>}
+        ) : <p className="mt-4 text-sm">60 歲之前沒有提取。</p>}
         <p className="mt-3 text-xs leading-5 text-ink/60">若按四段連續加，65 歲的累計是 22,000 美元（4×3,000 + 2×5,000），對照表寫 21,000 美元；75 歲按四段是 74,000 美元，對照表寫 78,000 美元。卡片上的累計提取沿用對照表，四段小計另行標明。</p>
       </section>
 

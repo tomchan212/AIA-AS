@@ -1,11 +1,73 @@
-import { MASTER_DATA, USD_HKD, withdrawalAtAge, type PolicyYearData } from "./data";
+import { AVF_HKD, MASTER_DATA, USD_HKD, withdrawalAtAge, type PolicyYearData } from "./data";
+
+export interface YearLine {
+  calendarYear: number;
+  policyYear: number;
+  age: number;
+  avfHKD: number | null;
+  avfApproximate: boolean;
+  planA: {
+    savingsPremiumUSD: number;
+    cumulativeSavingsUSD: number;
+    combinedCashValueUSD: number | null;
+    approximate: boolean;
+    note: string;
+  };
+  planB: {
+    savingsPremiumUSD: number;
+    cumulativeSavingsUSD: number;
+    annualWithdrawalUSD: number;
+    cumulativeWithdrawnUSD: number;
+    listedCumulativeWithdrawnUSD: number | null;
+    remainingCashValueUSD: number | null;
+    note: string;
+  };
+}
+
+export function yearLine(age: number): YearLine {
+  const safeAge = Math.min(100, Math.max(37, Math.round(age)));
+  const policyYear = safeAge - 36;
+  const planAPremium = policyYear <= 20 ? 3000 : 0;
+  const planACumulative = policyYear <= 10 ? 3000 * policyYear : policyYear <= 20 ? 30000 + 3000 * (policyYear - 10) : 60000;
+  const planBPremium = policyYear <= 10 ? 5000 : 0;
+  const planBCumulative = policyYear <= 10 ? 5000 * policyYear : 50000;
+  let withdrawn = 0;
+  for (let current = 60; current <= safeAge; current += 1) withdrawn += withdrawalAtAge(current);
+  const snap = MASTER_DATA.find((row) => row.age === safeAge);
+  const avf = AVF_HKD[safeAge];
+  return {
+    calendarYear: 1982 + safeAge,
+    policyYear,
+    age: safeAge,
+    avfHKD: avf?.amount ?? null,
+    avfApproximate: avf?.approximate ?? false,
+    planA: {
+      savingsPremiumUSD: planAPremium,
+      cumulativeSavingsUSD: planACumulative,
+      combinedCashValueUSD: snap ? snap.planA.combinedCashValueUSD : null,
+      approximate: snap?.planA.approximate ?? false,
+      note: snap?.planA.note ?? "這一年的現金價值沒有列在對照表。",
+    },
+    planB: {
+      savingsPremiumUSD: planBPremium,
+      cumulativeSavingsUSD: planBCumulative,
+      annualWithdrawalUSD: withdrawalAtAge(safeAge),
+      cumulativeWithdrawnUSD: withdrawn,
+      listedCumulativeWithdrawnUSD: snap && snap.age >= 60 ? snap.planB.cumulativeWithdrawnUSD : null,
+      remainingCashValueUSD: snap ? snap.planB.remainingCashValueUSD : null,
+      note: snap?.planB.medicalOffsetStatus ?? "這一年的剩餘現金價值沒有列在對照表。",
+    },
+  };
+}
+
+export function allYears() {
+  return Array.from({ length: 64 }, (_, index) => yearLine(37 + index));
+}
 
 export function rowAtAge(age: number): { row: PolicyYearData; snapped: boolean } {
-  const target = Math.min(100, Math.max(37, Math.round(age)));
-  const exact = MASTER_DATA.find((row) => row.age === target);
-  if (exact) return { row: exact, snapped: false };
-  const earlier = [...MASTER_DATA].reverse().find((row) => row.age < target) ?? MASTER_DATA[0];
-  return { row: earlier, snapped: true };
+  const line = yearLine(age);
+  const snap = MASTER_DATA.find((item) => item.age === line.age);
+  return { row: snap ?? MASTER_DATA[0], snapped: !snap };
 }
 
 export type QuizChoice = "A" | "B";

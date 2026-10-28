@@ -1,5 +1,20 @@
 export const USD_HKD = 7.8;
 
+/** 建議書或對照表寫明的 AVF 普通房保費。沒有列出的年齡不估算。 */
+export const AVF_HKD: Record<number, { amount: number; approximate: boolean }> = {
+  37: { amount: 7044.8, approximate: false },
+  38: { amount: 7311.2, approximate: false },
+  39: { amount: 7600, approximate: true },
+  47: { amount: 10689.6, approximate: false },
+  57: { amount: 12763.2, approximate: false },
+  60: { amount: 14425.6, approximate: false },
+  65: { amount: 18500, approximate: true },
+  70: { amount: 25001.6, approximate: false },
+  75: { amount: 32000, approximate: true },
+  80: { amount: 43409.6, approximate: false },
+  100: { amount: 85424.8, approximate: false },
+};
+
 export interface PlanAYear {
   savingsPremiumUSD: number;
   cumulativeSavingsUSD: number;

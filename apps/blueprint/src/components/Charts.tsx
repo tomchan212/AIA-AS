@@ -1,8 +1,9 @@
 import { Area, Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { MASTER_DATA, USD_HKD } from "../data";
+import { USD_HKD } from "../data";
 import { hkd, usd } from "../format";
+import { allYears } from "../model";
 
-const wealth = MASTER_DATA.map((row) => ({
+const wealth = allYears().map((row) => ({
   age: row.age,
   planA: row.planA.combinedCashValueUSD,
   planB: row.planB.remainingCashValueUSD,
@@ -28,12 +29,17 @@ function axisUsd(value: number) {
 
 export function WealthChart({ currency }: { currency: "USD" | "HKD" }) {
   const factor = currency === "HKD" ? USD_HKD : 1;
-  const rows = wealth.map((row) => ({ ...row, planA: row.planA * factor, planB: row.planB * factor, withdrawn: row.withdrawn * factor }));
+  const rows = wealth.map((row) => ({
+    ...row,
+    planA: row.planA == null ? null : row.planA * factor,
+    planB: row.planB == null ? null : row.planB * factor,
+    withdrawn: row.withdrawn * factor,
+  }));
   const show = currency === "USD" ? usd : hkd;
   return (
     <div className="doodle-card p-4 md:p-6">
       <h3 className="text-lg font-extrabold">現金價值與已提取金額</h3>
-      <p className="mt-1 text-sm text-ink/70">只畫對照表列出的 9 個年度。啡線是方案 A 不提取的合計現金價值，深藍線是方案 B 提取後剩餘，粉紅是方案 B 累計已提取。</p>
+      <p className="mt-1 text-sm text-ink/70">橫軸是每一年。粉紅是方案 B 按四段累計的提取。現金價值只在對照表有數字的年份有點，中間不連線。</p>
       <div className="mt-4 h-80">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
@@ -43,8 +49,8 @@ export function WealthChart({ currency }: { currency: "USD" | "HKD" }) {
             <Tooltip formatter={(value: number, name: string) => [show(value), name === "planA" ? "方案 A" : name === "planB" ? "方案 B 剩餘" : "方案 B 已提取"]} />
             <Legend formatter={(value) => (value === "planA" ? "方案 A" : value === "planB" ? "方案 B 剩餘" : "方案 B 已提取")} />
             <Area dataKey="withdrawn" fill="#FB7185" stroke="#FB7185" fillOpacity={0.35} />
-            <Line dataKey="planA" stroke="#92400E" strokeWidth={3} dot={{ r: 3 }} />
-            <Line dataKey="planB" stroke="#1E293B" strokeWidth={3} dot={{ r: 3 }} />
+            <Line dataKey="planA" stroke="#92400E" strokeWidth={3} dot={{ r: 3 }} connectNulls={false} />
+            <Line dataKey="planB" stroke="#1E293B" strokeWidth={3} dot={{ r: 3 }} connectNulls={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
