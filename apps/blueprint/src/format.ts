@@ -1,9 +1,17 @@
-export function money(value: number) {
-  const amount = Number.isFinite(value) ? value : 0;
-  return `HK$ ${amount.toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+import { USD_HKD } from "./data";
+
+export function usd(value: number) {
+  return `USD ${value.toLocaleString("zh-TW", { maximumFractionDigits: 2 })}`;
 }
 
-export function signedMoney(value: number) {
-  const prefix = value > 0 ? "+" : "";
-  return `${prefix}${money(value)}`;
+export function hkd(value: number) {
+  return `HK$ ${value.toLocaleString("zh-TW", { maximumFractionDigits: 2 })}`;
+}
+
+export function money(valueUSD: number, currency: "USD" | "HKD") {
+  return currency === "USD" ? usd(valueUSD) : hkd(valueUSD * USD_HKD);
+}
+
+export function hkdMoney(valueHKD: number, currency: "USD" | "HKD") {
+  return currency === "HKD" ? hkd(valueHKD) : usd(valueHKD / USD_HKD);
 }
