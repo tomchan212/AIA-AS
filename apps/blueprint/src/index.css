@@ -22,3 +22,7 @@ body {
 .doodle-btn[aria-pressed="true"] {
   @apply bg-ink text-paper;
 }
+
+.doodle-btn:disabled {
+  @apply cursor-not-allowed opacity-40 shadow-none;
+}
